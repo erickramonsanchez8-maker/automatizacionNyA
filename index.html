@@ -23,22 +23,16 @@ main{max-width:1040px;margin:28px auto;padding:0 20px 60px}.card{background:#fff
 <main>
 <section class="card">
  <div class="step"><span class="num">1</span><h2>Selecciona el reporte original</h2></div>
- <p class="hint">Admite archivos .xls, .xlsx y .csv. El lector va incluido en la página y el procesamiento se realiza en este dispositivo; el archivo no se carga a un servidor.</p>
- <div class="drop" id="drop"><strong>Arrastra aquí tu reporte de ventas</strong><span style="color:#64748b;font-size:13px">o selecciona un archivo de tu equipo</span><input id="file" type="file" accept=".xls,.xlsx,.xlsm,.csv"></div>
+ <p class="hint">Selecciona varios archivos .xls, .xlsx o .csv. NyA procesará cada reporte por separado y generará un Excel individual. El procesamiento se realiza en este dispositivo; tus archivos no se cargan a un servidor.</p>
+ <div class="drop" id="drop"><strong>Arrastra aquí todos tus reportes</strong><span style="color:#64748b;font-size:13px">o selecciona varios archivos de tu equipo</span><input id="file" type="file" accept=".xls,.xlsx,.xlsm,.csv" multiple></div>
  <div class="filemeta" id="filemeta">Ningún archivo seleccionado.</div>
+ <div class="actions" style="margin-top:14px"><button class="primary" id="process" disabled>Procesar archivos seleccionados</button><button class="secondary" id="clear">Limpiar selección</button><span class="status" id="batchstatus"></span></div>
 </section>
 <section class="card hidden" id="result">
- <div class="step"><span class="num">2</span><h2>Revisa el concentrado generado</h2></div>
- <div class="stat" style="margin:0 0 14px;background:#eff6ff;border-color:#cfe0ff"><span>Fecha del reporte</span><b id="reportdate">—</b></div>
- <div class="stats">
-  <div class="stat"><span>Documentos detectados</span><b id="count">—</b></div>
-  <div class="stat"><span>Total de ventas</span><b id="total">—</b></div>
-  <div class="stat"><span>Base según referencia (total ÷ 1.16)</span><b id="base">—</b></div>
-  <div class="stat"><span>Importe neto del reporte</span><b id="net">—</b></div>
- </div>
- <div class="tablewrap"><table><thead><tr><th>Folio</th><th>Importe total</th></tr></thead><tbody id="rows"></tbody><tfoot><tr class="totalrow"><td id="tfootlabel">Total</td><td id="tfootsum"></td></tr></tfoot></table></div>
- <div class="actions" style="margin-top:18px"><button class="primary" id="download">Descargar Excel formateado</button><button class="secondary" id="reset">Procesar otro archivo</button><span class="status" id="status"></span></div>
- <p class="foot">El Excel conserva el esquema de la referencia y calcula su última cifra como total ÷ 1.16. También se muestra el importe neto real sumado desde el reporte; ambos pueden diferir si hay ventas exentas o con tasa distinta.</p>
+ <div class="step"><span class="num">2</span><h2>Resultados del procesamiento por lotes</h2></div>
+ <p class="hint">Cada reporte genera su propio Excel. Los archivos con error quedan identificados y no impiden descargar los demás.</p>
+ <div class="tablewrap"><table style="min-width:720px"><thead><tr><th>Archivo original</th><th>Fecha</th><th>Documentos</th><th>Total ventas</th><th>Resultado</th><th>Descarga</th></tr></thead><tbody id="batchrows"></tbody></table></div>
+ <p class="foot">Cada Excel conserva el formato del concentrado actual, la fecha del reporte y el cálculo de base (total ÷ 1.16). Los reportes se mantienen independientes.</p>
 </section>
 <section class="card">
  <div class="step"><span class="num">i</span><h2>Qué hace la herramienta</h2></div>
@@ -47,7 +41,7 @@ main{max-width:1040px;margin:28px auto;padding:0 20px 60px}.card{background:#fff
 </main>
 <script>
 const $=id=>document.getElementById(id);
-let resultData=null,sourceName="";
+let batchResults=[],selectedFiles=[];
 const money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
 function normalizeText(v){
  return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
@@ -109,67 +103,91 @@ function processRows(rows){
  const netSum=tickets.every(t=>Number.isFinite(t.net))?tickets.reduce((s,t)=>s+Math.round(t.net*100),0)/100:null;
  return {date:dates[0],tickets,sum,base:sum/1.16,netSum};
 }
-async function loadFile(file){
- if(!file)return;
- $('filemeta').textContent='Leyendo '+file.name+'…';
- $('result').classList.add('hidden');$('status').textContent='';
- try{
-  if(!window.XLSX)throw new Error('El lector de Excel local no se cargó. Actualiza la página con Ctrl + F5 y vuelve a intentar.');
-  const data=await file.arrayBuffer();
-  const wb=XLSX.read(data,{type:'array',cellDates:true});
-  let parsed=null,lastError=null;
-  for(const sheetName of wb.SheetNames){
-   try{
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,raw:true,defval:''});
-    const candidate=processRows(rows);
-    if(!parsed||candidate.tickets.length>parsed.tickets.length)parsed=candidate;
-   }catch(e){lastError=e}
-  }
-  if(!parsed)throw lastError||new Error('No se encontró una hoja con los datos de ventas.');
-  resultData=parsed;sourceName=file.name;
-  $('filemeta').textContent='Archivo cargado: '+file.name;
-  $('reportdate').textContent=resultData.date;
-  $('count').textContent=resultData.tickets.length;
-  $('total').textContent=money(resultData.sum);
-  $('base').textContent=money(resultData.base);
-  $('net').textContent=resultData.netSum===null?'No disponible':money(resultData.netSum);
-  $('rows').innerHTML=resultData.tickets.map(t=>'<tr><td>'+escapeHtml(t.folio)+'</td><td>'+money(t.total)+'</td></tr>').join('');
-  $('tfootlabel').textContent='Total '+resultData.tickets.length+' documentos';
-  $('tfootsum').textContent=money(resultData.sum);
-  $('result').classList.remove('hidden');
- }catch(e){
-  resultData=null;
-  $('filemeta').innerHTML='<span class="error">'+escapeHtml(e.message||'No se pudo leer el archivo.')+'</span>';
+async function parseFile(file){
+ if(!window.XLSX)throw new Error('El lector de Excel local no se cargó. Actualiza la página con Ctrl + F5 y vuelve a intentar.');
+ const data=await file.arrayBuffer();
+ const wb=XLSX.read(data,{type:'array',cellDates:true});
+ let parsed=null,lastError=null;
+ for(const sheetName of wb.SheetNames){
+  try{
+   const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,raw:true,defval:''});
+   const candidate=processRows(rows);
+   if(!parsed||candidate.tickets.length>parsed.tickets.length)parsed=candidate;
+  }catch(e){lastError=e}
  }
+ if(!parsed)throw lastError||new Error('No se encontró una hoja con los datos de ventas.');
+ return parsed;
+}
+function safeName(name){
+ return String(name).replace(/\.[^.]+$/,'').replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,70)||'Reporte';
+}
+function buildWorkbook(data){
+ const t=data.tickets;
+ const aoa=[['',data.date,''],...t.map(x=>['',x.folio,x.total]),['','',''],['Total '+t.length+' documentos','',data.sum],['','',data.base]];
+ const ws=XLSX.utils.aoa_to_sheet(aoa);
+ ws['!cols']=[{wch:25},{wch:18},{wch:18}];
+ for(let r=2;r<=t.length+1;r++){const cell=ws['C'+r];if(cell)cell.z='#,##0.00'}
+ const sumRow=t.length+3,baseRow=t.length+4;
+ const sumCell=ws['C'+sumRow];if(sumCell)sumCell.z='#,##0.00';
+ const baseCell=ws['C'+baseRow];
+ if(baseCell){baseCell.z='#,##0.00';baseCell.f='C'+sumRow+'/1.16';baseCell.v=data.base}
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Concentrado');
+ return wb;
+}
+function downloadResult(index){
+ const item=batchResults[index];
+ if(!item||!item.data)return;
+ try{
+  const date=item.data.date.replace(/[\\/]/g,'-');
+  XLSX.writeFile(buildWorkbook(item.data),'Concentrado_'+date+'_'+safeName(item.file.name)+'.xlsx');
+  const status=$('batchrows').querySelector('[data-status="'+index+'"]');
+  if(status)status.textContent='Excel generado';
+ }catch(e){alert('No se pudo generar '+item.file.name+': '+(e.message||'error desconocido'))}
+}
+function renderBatch(){
+ $('batchrows').innerHTML=batchResults.map((item,i)=>{
+  const d=item.data;
+  return '<tr><td>'+escapeHtml(item.file.name)+'</td><td>'+(d?escapeHtml(d.date):'—')+'</td><td>'+(d?d.tickets.length:'—')+'</td><td>'+(d?money(d.sum):'—')+'</td><td class="'+(d?'':'error')+'" data-status="'+i+'">'+(d?'Listo':escapeHtml(item.error))+'</td><td>'+(d?'<button class="primary" data-download="'+i+'" type="button">Descargar Excel</button>':'No disponible')+'</td></tr>';
+ }).join('');
+ $('result').classList.remove('hidden');
+}
+async function processFiles(){
+ if(!selectedFiles.length)return;
+ const button=$('process');button.disabled=true;
+ $('batchstatus').textContent='Procesando '+selectedFiles.length+' archivo(s)…';
+ $('result').classList.add('hidden');batchResults=[];
+ for(let i=0;i<selectedFiles.length;i++){
+  const file=selectedFiles[i];
+  $('batchstatus').textContent='Procesando '+(i+1)+' de '+selectedFiles.length+': '+file.name;
+  try{batchResults.push({file,data:await parseFile(file),error:null})}
+  catch(e){batchResults.push({file,data:null,error:e.message||'No se pudo leer el archivo.'})}
+ }
+ renderBatch();
+ const ok=batchResults.filter(x=>x.data).length,failed=batchResults.length-ok;
+ $('batchstatus').textContent=ok+' correcto(s) · '+failed+' con error';
+ $('filemeta').textContent='Procesamiento terminado: '+selectedFiles.length+' archivo(s).';
+ button.disabled=false;
+}
+function setFiles(files){
+ selectedFiles=Array.from(files||[]).filter(f=>/\.(xlsx?|xlsm|csv)$/i.test(f.name));
+ $('filemeta').textContent=selectedFiles.length?selectedFiles.length+' archivo(s) seleccionado(s): '+selectedFiles.map(f=>f.name).join(', '):'Ningún archivo compatible seleccionado.';
+ $('process').disabled=!selectedFiles.length;$('result').classList.add('hidden');$('batchstatus').textContent='';
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-$('file').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];e.target.value='';if(file)loadFile(file);});
+$('file').addEventListener('change',e=>setFiles(e.target.files));
 const drop=$('drop');
 drop.addEventListener('click',e=>{if(e.target!==$('file'))$('file').click()});
 drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag')});
 drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
-drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag');loadFile(e.dataTransfer.files[0])});
-$('download').addEventListener('click',()=>{
- if(!resultData)return;
- try{
-  const t=resultData.tickets;
-  const aoa=[['',resultData.date,''],...t.map(x=>['',x.folio,x.total]),['','',''],['Total '+t.length+' documentos','',resultData.sum],['','',resultData.base]];
-  const ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:25},{wch:18},{wch:18}];
-  for(let r=2;r<=t.length+1;r++){const cell=ws['C'+r];if(cell)cell.z='#,##0.00'}
-  const sumRow=t.length+3,baseRow=t.length+4;
-  const sumCell=ws['C'+sumRow];if(sumCell)sumCell.z='#,##0.00';
-  const baseCell=ws['C'+baseRow];
-  if(baseCell){baseCell.z='#,##0.00';baseCell.f='C'+sumRow+'/1.16';baseCell.v=resultData.base}
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Concentrado');
-  const date=resultData.date.replace(/[\\/]/g,'-');
-  XLSX.writeFile(wb,'Concentrado_'+date+'.xlsx');
-  $('status').textContent='Excel generado correctamente.';
- }catch(e){
-  $('status').textContent='No se pudo generar el Excel: '+(e.message||'error desconocido');
-  $('status').classList.add('error');
- }
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag');setFiles(e.dataTransfer.files)});
+$('process').addEventListener('click',processFiles);
+$('clear').addEventListener('click',()=>{
+ $('file').value='';selectedFiles=[];batchResults=[];
+ $('filemeta').textContent='Ningún archivo seleccionado.';$('batchstatus').textContent='';
+ $('process').disabled=true;$('result').classList.add('hidden');
 });
-$('reset').addEventListener('click',()=>{$('file').value='';$('filemeta').textContent='Ningún archivo seleccionado.';$('result').classList.add('hidden');resultData=null});
-</script>
+$('batchrows').addEventListener('click',e=>{
+ const button=e.target.closest('[data-download]');
+ if(button)downloadResult(Number(button.getAttribute('data-download')));
+});</script>
 </body></html>
