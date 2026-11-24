@@ -107,7 +107,7 @@ function processRows(rows){
  const cents=tickets.reduce((s,t)=>s+Math.round(t.total*100),0);
  const sum=cents/100;
  const netSum=tickets.every(t=>Number.isFinite(t.net))?tickets.reduce((s,t)=>s+Math.round(t.net*100),0)/100:null;
- return {date:dates[0],tickets,sum,base:Math.round((sum/1.16)*100)/100,netSum};
+ return {date:dates[0],tickets,sum,base:sum/1.16,netSum};
 }
 async function loadFile(file){
  if(!file)return;
@@ -143,7 +143,7 @@ async function loadFile(file){
  }
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-$('file').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];if(file)loadFile(file);});
+$('file').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];e.target.value='';if(file)loadFile(file);});
 const drop=$('drop');
 drop.addEventListener('click',e=>{if(e.target!==$('file'))$('file').click()});
 drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag')});
@@ -151,17 +151,24 @@ drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
 drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag');loadFile(e.dataTransfer.files[0])});
 $('download').addEventListener('click',()=>{
  if(!resultData)return;
- const t=resultData.tickets, last=2+t.length+1;
- const aoa=[['Fecha:',resultData.date,''],...t.map(x=>['',x.folio,x.total]),['','',''],['Total '+t.length+' documentos','',resultData.sum],['','',resultData.base]];
- const ws=XLSX.utils.aoa_to_sheet(aoa);
- ws['!cols']=[{wch:25},{wch:18},{wch:18}];
- for(let r=1;r<=t.length+1;r++){const cell=ws['C'+(r+1)];if(cell)cell.z='#,##0.00'}
- const sumCell=ws['C'+(t.length+3)];if(sumCell)sumCell.z='#,##0.00';
- const baseCell=ws['C'+(t.length+4)];if(baseCell){baseCell.z='#,##0.00';baseCell.f='C'+(t.length+3)+'/1.16';baseCell.v=resultData.base}
- const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Concentrado');
- const date=resultData.date.replaceAll('/','-');
- XLSX.writeFile(wb,'Concentrado_'+date+'.xlsx');
- $('status').textContent='Excel generado correctamente.';
+ try{
+  const t=resultData.tickets;
+  const aoa=[['',resultData.date,''],...t.map(x=>['',x.folio,x.total]),['','',''],['Total '+t.length+' documentos','',resultData.sum],['','',resultData.base]];
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:25},{wch:18},{wch:18}];
+  for(let r=2;r<=t.length+1;r++){const cell=ws['C'+r];if(cell)cell.z='#,##0.00'}
+  const sumRow=t.length+3,baseRow=t.length+4;
+  const sumCell=ws['C'+sumRow];if(sumCell)sumCell.z='#,##0.00';
+  const baseCell=ws['C'+baseRow];
+  if(baseCell){baseCell.z='#,##0.00';baseCell.f='C'+sumRow+'/1.16';baseCell.v=resultData.base}
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Concentrado');
+  const date=resultData.date.replace(/[\\/]/g,'-');
+  XLSX.writeFile(wb,'Concentrado_'+date+'.xlsx');
+  $('status').textContent='Excel generado correctamente.';
+ }catch(e){
+  $('status').textContent='No se pudo generar el Excel: '+(e.message||'error desconocido');
+  $('status').classList.add('error');
+ }
 });
 $('reset').addEventListener('click',()=>{$('file').value='';$('filemeta').textContent='Ningún archivo seleccionado.';$('result').classList.add('hidden');resultData=null});
 </script>
