@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NyA · Resumen de ventas</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'"></script>
+<script src="./vendor/xlsx.full.min.js"></script>
 <style>
 :root{--navy:#14243a;--blue:#2563eb;--cyan:#dbeafe;--ink:#172033;--muted:#64748b;--line:#e5eaf1;--bg:#f4f7fb;--white:#fff;--green:#087e5b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -23,7 +23,7 @@ main{max-width:1040px;margin:28px auto;padding:0 20px 60px}.card{background:#fff
 <main>
 <section class="card">
  <div class="step"><span class="num">1</span><h2>Selecciona el reporte original</h2></div>
- <p class="hint">Admite archivos .xls, .xlsx y .csv. El procesamiento se realiza en este dispositivo; el archivo no se carga a un servidor.</p>
+ <p class="hint">Admite archivos .xls, .xlsx y .csv. El lector va incluido en la página y el procesamiento se realiza en este dispositivo; el archivo no se carga a un servidor.</p>
  <div class="drop" id="drop"><strong>Arrastra aquí tu reporte de ventas</strong><span style="color:#64748b;font-size:13px">o selecciona un archivo de tu equipo</span><input id="file" type="file" accept=".xls,.xlsx,.xlsm,.csv"></div>
  <div class="filemeta" id="filemeta">Ningún archivo seleccionado.</div>
 </section>
@@ -49,45 +49,84 @@ main{max-width:1040px;margin:28px auto;padding:0 20px 60px}.card{background:#fff
 const $=id=>document.getElementById(id);
 let resultData=null,sourceName="";
 const money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
+function normalizeText(v){
+ return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+}
 function dateText(v){
  if(v instanceof Date&&!isNaN(v))return String(v.getMonth()+1).padStart(2,'0')+'/'+String(v.getDate()).padStart(2,'0')+'/'+v.getFullYear();
- if(typeof v==='number'&&v>20000&&v<80000){const d=XLSX.SSF.parse_date_code(v);return String(d.m).padStart(2,'0')+'/'+String(d.d).padStart(2,'0')+'/'+d.y}
+ if(typeof v==='number'&&v>20000&&v<80000){
+  const d=XLSX.SSF.parse_date_code(v);
+  if(d)return String(d.m).padStart(2,'0')+'/'+String(d.d).padStart(2,'0')+'/'+d.y;
+ }
  return String(v??'').trim();
 }
-function num(v){if(typeof v==='number')return v;if(v==null||v==='')return NaN;return Number(String(v).replace(/[$,\s]/g,''))}
-function processRows(rows){
- let header=-1,idx={date:0,folio:1,total:-1,net:-1};
- for(let i=0;i<Math.min(rows.length,60);i++){
-  const r=rows[i].map(x=>String(x??'').trim().toLowerCase());
-  if(r.includes('fecha')&&r.includes('folio')){header=i;idx.date=r.indexOf('fecha');idx.folio=r.indexOf('folio');idx.total=r.indexOf('total');idx.net=r.indexOf('importe neto');break}
+function validDate(v){return /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)||/^\d{4}-\d{2}-\d{2}$/.test(v)}
+function num(v){
+ if(typeof v==='number')return Number.isFinite(v)?v:NaN;
+ if(v==null||v==='')return NaN;
+ let s=String(v).trim().replace(/[$\s]/g,'');
+ if(s.includes(',')&&s.includes('.')){
+  if(s.lastIndexOf(',')>s.lastIndexOf('.'))s=s.replace(/\./g,'').replace(',','.');
+  else s=s.replace(/,/g,'');
+ }else if(s.includes(',')){
+  s=/,\d{1,2}$/.test(s)?s.replace(',','.'):s.replace(/,/g,'');
  }
- if(header<0||idx.total<0)throw new Error('No encontré los encabezados Fecha, Folio y Total. Usa el reporte de ventas original.');
- const tickets=[];
- for(let i=header+1;i<rows.length;i++){
-  const r=rows[i]||[],f=dateText(r[idx.date]),folio=String(r[idx.folio]??'').trim();
-  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(f)&&/^A\w+/i.test(folio)){
-   const total=num(r[idx.total]),net=idx.net>=0?num(r[idx.net]):NaN;
-   if(!Number.isFinite(total))throw new Error('El ticket '+folio+' no tiene un total numérico. Se detuvo el proceso para evitar un concentrado incompleto.');
-   tickets.push({date:f,folio,total,net});
+ return Number(s);
+}
+function processRows(rows){
+ let header=-1,idx={date:-1,folio:-1,total:-1,net:-1};
+ const aliases={date:['fecha','fecha de venta'],folio:['folio','numero de folio','no folio'],total:['total','importe total','total venta','total del ticket'],net:['importe neto','subtotal']};
+ for(let i=0;i<Math.min(rows.length,100);i++){
+  const r=(rows[i]||[]).map(normalizeText);
+  const find=names=>r.findIndex(x=>names.includes(x));
+  const candidate={date:find(aliases.date),folio:find(aliases.folio),total:find(aliases.total),net:find(aliases.net)};
+  if(candidate.date>=0&&candidate.folio>=0&&candidate.total>=0){
+   header=i;idx=candidate;break;
   }
  }
- if(!tickets.length)throw new Error('No encontré tickets. Verifica que sea el reporte de ventas de mostrador.');
+ if(header<0)throw new Error('No encontré una fila de encabezados con Fecha, Folio y Total. Revisa que sea el reporte original de ventas.');
+ const tickets=[];
+ let lastDate='';
+ for(let i=header+1;i<rows.length;i++){
+  const r=rows[i]||[];
+  const folio=String(r[idx.folio]??'').trim();
+  if(!/^A[\w-]+$/i.test(folio))continue;
+  const dateCandidate=dateText(r[idx.date]);
+  if(validDate(dateCandidate))lastDate=dateCandidate;
+  if(!lastDate)throw new Error('El folio '+folio+' no tiene una fecha reconocible. No se generó el Excel para evitar datos incompletos.');
+  const total=num(r[idx.total]);
+  const net=idx.net>=0?num(r[idx.net]):NaN;
+  if(!Number.isFinite(total))throw new Error('El ticket '+folio+' no tiene un Total numérico. No se generó el Excel.');
+  tickets.push({date:lastDate,folio,total:Math.round(total*100)/100,net:Number.isFinite(net)?Math.round(net*100)/100:NaN});
+ }
+ if(!tickets.length)throw new Error('No encontré tickets con folio. Verifica que el reporte tenga las columnas Fecha, Folio y Total.');
+ const seen=new Set();
+ for(const t of tickets){if(seen.has(t.folio))throw new Error('El folio '+t.folio+' está duplicado. Revisa el reporte antes de generar el concentrado.');seen.add(t.folio)}
  const dates=[...new Set(tickets.map(t=>t.date))];
- if(dates.length>1)throw new Error('El archivo contiene más de una fecha de venta. Separa los reportes por día antes de procesarlos.');
- const sum=tickets.reduce((s,t)=>s+t.total,0);
- const netSum=tickets.every(t=>Number.isFinite(t.net))?tickets.reduce((s,t)=>s+t.net,0):null;
- return {date:dates[0],tickets,sum,base:sum/1.16,netSum};
+ if(dates.length>1)throw new Error('El archivo contiene tickets de más de una fecha. Separa los reportes por día antes de procesarlos.');
+ const cents=tickets.reduce((s,t)=>s+Math.round(t.total*100),0);
+ const sum=cents/100;
+ const netSum=tickets.every(t=>Number.isFinite(t.net))?tickets.reduce((s,t)=>s+Math.round(t.net*100),0)/100:null;
+ return {date:dates[0],tickets,sum,base:Math.round((sum/1.16)*100)/100,netSum};
 }
 async function loadFile(file){
  if(!file)return;
- $('filemeta').textContent='Leyendo '+file.name+'…';$('result').classList.add('hidden');$('status').textContent='';
+ $('filemeta').textContent='Leyendo '+file.name+'…';
+ $('result').classList.add('hidden');$('status').textContent='';
  try{
-  if(!window.XLSX)throw new Error('No se pudo cargar el lector de Excel. Revisa tu conexión a internet y vuelve a intentarlo.');
+  if(!window.XLSX)throw new Error('El lector de Excel local no se cargó. Actualiza la página con Ctrl + F5 y vuelve a intentar.');
   const data=await file.arrayBuffer();
   const wb=XLSX.read(data,{type:'array',cellDates:true});
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
-  resultData=processRows(rows);sourceName=file.name;
+  let parsed=null,lastError=null;
+  for(const sheetName of wb.SheetNames){
+   try{
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,raw:true,defval:''});
+    const candidate=processRows(rows);
+    if(!parsed||candidate.tickets.length>parsed.tickets.length)parsed=candidate;
+   }catch(e){lastError=e}
+  }
+  if(!parsed)throw lastError||new Error('No se encontró una hoja con los datos de ventas.');
+  resultData=parsed;sourceName=file.name;
   $('filemeta').textContent='Archivo cargado: '+file.name;
   $('reportdate').textContent=resultData.date;
   $('count').textContent=resultData.tickets.length;
@@ -98,11 +137,15 @@ async function loadFile(file){
   $('tfootlabel').textContent='Total '+resultData.tickets.length+' documentos';
   $('tfootsum').textContent=money(resultData.sum);
   $('result').classList.remove('hidden');
- }catch(e){resultData=null;$('filemeta').innerHTML='<span class="error">'+escapeHtml(e.message||'No se pudo leer el archivo.')+'</span>'}
+ }catch(e){
+  resultData=null;
+  $('filemeta').innerHTML='<span class="error">'+escapeHtml(e.message||'No se pudo leer el archivo.')+'</span>';
+ }
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 $('file').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];if(file)loadFile(file);});
 const drop=$('drop');
+drop.addEventListener('click',e=>{if(e.target!==$('file'))$('file').click()});
 drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag')});
 drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
 drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag');loadFile(e.dataTransfer.files[0])});
