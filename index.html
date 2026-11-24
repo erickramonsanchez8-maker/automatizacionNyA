@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NyA · Resumen de ventas</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'"></script>
 <style>
 :root{--navy:#14243a;--blue:#2563eb;--cyan:#dbeafe;--ink:#172033;--muted:#64748b;--line:#e5eaf1;--bg:#f4f7fb;--white:#fff;--green:#087e5b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -12,7 +12,7 @@ header{background:linear-gradient(120deg,#101f35,#1c3d60);color:#fff;padding:30p
 header small{color:#a9c4e4;letter-spacing:.14em;text-transform:uppercase;font-weight:700;font-size:11px}header h1{margin:8px 0 3px;font-size:clamp(25px,4vw,36px);letter-spacing:-.04em}header p{margin:0;color:#c5d5e8}
 main{max-width:1040px;margin:28px auto;padding:0 20px 60px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 8px 30px #132b4510;margin-bottom:18px}
 .step{display:flex;gap:12px;align-items:center;margin-bottom:16px}.num{width:30px;height:30px;border-radius:10px;background:#eaf2ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800}.step h2{font-size:17px;margin:0}.hint{color:var(--muted);font-size:13px;margin:5px 0 16px}
-.drop{border:1.5px dashed #b9c8da;background:#f8fbff;border-radius:14px;padding:26px;text-align:center;transition:.2s}.drop.drag{border-color:var(--blue);background:#eff6ff}.drop strong{display:block;margin-bottom:4px}.drop input{display:none}.filebtn,.primary,.secondary{border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer;font-size:14px}.filebtn{display:inline-block;background:#e8eff9;color:#183653;margin-top:12px}.primary{background:var(--blue);color:white}.primary:disabled{opacity:.4;cursor:not-allowed}.secondary{background:#edf2f7;color:#1f344d}
+.drop{border:1.5px dashed #b9c8da;background:#f8fbff;border-radius:14px;padding:26px;text-align:center;transition:.2s}.drop.drag{border-color:var(--blue);background:#eff6ff}.drop strong{display:block;margin-bottom:4px}.drop input[type=file]{display:block;width:100%;max-width:360px;margin:16px auto 0;padding:10px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;color:#334155;font:inherit;cursor:pointer}.filebtn,.primary,.secondary{border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer;font-size:14px}.filebtn{display:inline-block;background:#e8eff9;color:#183653;margin-top:12px}.primary{background:var(--blue);color:white}.primary:disabled{opacity:.4;cursor:not-allowed}.secondary{background:#edf2f7;color:#1f344d}
 .filemeta{margin-top:12px;color:var(--muted);font-size:13px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.stat{padding:16px;background:#f8fafc;border:1px solid var(--line);border-radius:13px}.stat span{display:block;color:var(--muted);font-size:12px}.stat b{font-size:21px;letter-spacing:-.03em}.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.status{font-size:13px;color:var(--green);margin-left:auto}.error{color:#b42318}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;font-size:13px;min-width:440px}th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--line)}th{background:#f8fafc;color:#53657b;font-size:11px;text-transform:uppercase;letter-spacing:.06em}td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}.totalrow{font-weight:800;background:#f8fafc}.foot{font-size:12px;color:var(--muted);margin-top:14px}.hidden{display:none!important}
 @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){header{padding:24px 20px}.card{padding:18px}.stats{grid-template-columns:1fr}.status{width:100%;margin:4px 0 0}}
@@ -24,7 +24,7 @@ main{max-width:1040px;margin:28px auto;padding:0 20px 60px}.card{background:#fff
 <section class="card">
  <div class="step"><span class="num">1</span><h2>Selecciona el reporte original</h2></div>
  <p class="hint">Admite archivos .xls, .xlsx y .csv. El procesamiento se realiza en este dispositivo; el archivo no se carga a un servidor.</p>
- <div class="drop" id="drop"><strong>Arrastra aquí tu reporte de ventas</strong><span style="color:#64748b;font-size:13px">o selecciona un archivo de tu equipo</span><label class="filebtn" for="file">Elegir archivo</label><input id="file" type="file" accept=".xls,.xlsx,.xlsm,.csv"></div>
+ <div class="drop" id="drop"><strong>Arrastra aquí tu reporte de ventas</strong><span style="color:#64748b;font-size:13px">o selecciona un archivo de tu equipo</span><input id="file" type="file" accept=".xls,.xlsx,.xlsm,.csv"></div>
  <div class="filemeta" id="filemeta">Ningún archivo seleccionado.</div>
 </section>
 <section class="card hidden" id="result">
@@ -82,6 +82,7 @@ async function loadFile(file){
  if(!file)return;
  $('filemeta').textContent='Leyendo '+file.name+'…';$('result').classList.add('hidden');$('status').textContent='';
  try{
+  if(!window.XLSX)throw new Error('No se pudo cargar el lector de Excel. Revisa tu conexión a internet y vuelve a intentarlo.');
   const data=await file.arrayBuffer();
   const wb=XLSX.read(data,{type:'array',cellDates:true});
   const ws=wb.Sheets[wb.SheetNames[0]];
@@ -100,7 +101,7 @@ async function loadFile(file){
  }catch(e){resultData=null;$('filemeta').innerHTML='<span class="error">'+escapeHtml(e.message||'No se pudo leer el archivo.')+'</span>'}
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-$('file').addEventListener('change',e=>loadFile(e.target.files[0]));
+$('file').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];if(file)loadFile(file);});
 const drop=$('drop');
 drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag')});
 drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
