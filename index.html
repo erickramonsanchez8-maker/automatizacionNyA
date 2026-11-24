@@ -28,7 +28,7 @@ main{max-width:1040px;margin:28px auto;padding:0 20px 60px}.card{background:#fff
 </section>
 <section class="card hidden" id="result">
  <div class="step"><span class="num">2</span><h2>Revisa el concentrado generado</h2></div>
- <div class="stats">
+ <div class="stat" style="margin:0 0 14px;background:#eff6ff;border-color:#cfe0ff"><span>Fecha del reporte</span><b id="reportdate">—</b></div>\n <div class="stats">
   <div class="stat"><span>Documentos detectados</span><b id="count">—</b></div>
   <div class="stat"><span>Total de ventas</span><b id="total">—</b></div>
   <div class="stat"><span>Base según referencia (total ÷ 1.16)</span><b id="base">—</b></div>\n  <div class="stat"><span>Importe neto del reporte</span><b id="net">—</b></div>
@@ -84,7 +84,7 @@ async function loadFile(file){
   const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
   resultData=processRows(rows);sourceName=file.name;
   $('filemeta').textContent='Archivo cargado: '+file.name;
-  $('count').textContent=resultData.tickets.length;
+  $('reportdate').textContent=resultData.date;\n  $('count').textContent=resultData.tickets.length;
   $('total').textContent=money(resultData.sum);
   $('base').textContent=money(resultData.base);\n  $('net').textContent=resultData.netSum===null?'No disponible':money(resultData.netSum);
   $('rows').innerHTML=resultData.tickets.map(t=>'<tr><td>'+escapeHtml(t.folio)+'</td><td>'+money(t.total)+'</td></tr>').join('');
@@ -102,7 +102,7 @@ drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag'
 $('download').addEventListener('click',()=>{
  if(!resultData)return;
  const t=resultData.tickets, last=2+t.length+1;
- const aoa=[['',resultData.date,''],...t.map(x=>['',x.folio,x.total]),['','',''],['Total '+t.length+' documentos','',resultData.sum],['','',resultData.base]];
+ const aoa=[['Fecha:',resultData.date,''],...t.map(x=>['',x.folio,x.total]),['','',''],['Total '+t.length+' documentos','',resultData.sum],['','',resultData.base]];
  const ws=XLSX.utils.aoa_to_sheet(aoa);
  ws['!cols']=[{wch:25},{wch:18},{wch:18}];
  for(let r=1;r<=t.length+1;r++){const cell=ws['C'+(r+1)];if(cell)cell.z='#,##0.00'}
