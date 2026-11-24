@@ -14,7 +14,8 @@ main{max-width:1040px;margin:28px auto;padding:0 20px 60px}.card{background:#fff
 .step{display:flex;gap:12px;align-items:center;margin-bottom:16px}.num{width:30px;height:30px;border-radius:10px;background:#eaf2ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800}.step h2{font-size:17px;margin:0}.hint{color:var(--muted);font-size:13px;margin:5px 0 16px}
 .drop{border:1.5px dashed #b9c8da;background:#f8fbff;border-radius:14px;padding:26px;text-align:center;transition:.2s}.drop.drag{border-color:var(--blue);background:#eff6ff}.drop strong{display:block;margin-bottom:4px}.drop input{display:none}.filebtn,.primary,.secondary{border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer;font-size:14px}.filebtn{display:inline-block;background:#e8eff9;color:#183653;margin-top:12px}.primary{background:var(--blue);color:white}.primary:disabled{opacity:.4;cursor:not-allowed}.secondary{background:#edf2f7;color:#1f344d}
 .filemeta{margin-top:12px;color:var(--muted);font-size:13px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.stat{padding:16px;background:#f8fafc;border:1px solid var(--line);border-radius:13px}.stat span{display:block;color:var(--muted);font-size:12px}.stat b{font-size:21px;letter-spacing:-.03em}.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.status{font-size:13px;color:var(--green);margin-left:auto}.error{color:#b42318}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;font-size:13px;min-width:440px}th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--line)}th{background:#f8fafc;color:#53657b;font-size:11px;text-transform:uppercase;letter-spacing:.06em}td:last-child,th:last-child{text-align:right;font-variant-numeric:tabular-nums}.totalrow{font-weight:800;background:#f8fafc}.foot{font-size:12px;color:var(--muted);margin-top:14px}.hidden{display:none!important}
-@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}\n@media(max-width:600px){header{padding:24px 20px}.card{padding:18px}.stats{grid-template-columns:1fr}.status{width:100%;margin:4px 0 0}}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){header{padding:24px 20px}.card{padding:18px}.stats{grid-template-columns:1fr}.status{width:100%;margin:4px 0 0}}
 </style>
 </head>
 <body>
@@ -28,10 +29,12 @@ main{max-width:1040px;margin:28px auto;padding:0 20px 60px}.card{background:#fff
 </section>
 <section class="card hidden" id="result">
  <div class="step"><span class="num">2</span><h2>Revisa el concentrado generado</h2></div>
- <div class="stat" style="margin:0 0 14px;background:#eff6ff;border-color:#cfe0ff"><span>Fecha del reporte</span><b id="reportdate">—</b></div>\n <div class="stats">
+ <div class="stat" style="margin:0 0 14px;background:#eff6ff;border-color:#cfe0ff"><span>Fecha del reporte</span><b id="reportdate">—</b></div>
+ <div class="stats">
   <div class="stat"><span>Documentos detectados</span><b id="count">—</b></div>
   <div class="stat"><span>Total de ventas</span><b id="total">—</b></div>
-  <div class="stat"><span>Base según referencia (total ÷ 1.16)</span><b id="base">—</b></div>\n  <div class="stat"><span>Importe neto del reporte</span><b id="net">—</b></div>
+  <div class="stat"><span>Base según referencia (total ÷ 1.16)</span><b id="base">—</b></div>
+  <div class="stat"><span>Importe neto del reporte</span><b id="net">—</b></div>
  </div>
  <div class="tablewrap"><table><thead><tr><th>Folio</th><th>Importe total</th></tr></thead><tbody id="rows"></tbody><tfoot><tr class="totalrow"><td id="tfootlabel">Total</td><td id="tfootsum"></td></tr></tfoot></table></div>
  <div class="actions" style="margin-top:18px"><button class="primary" id="download">Descargar Excel formateado</button><button class="secondary" id="reset">Procesar otro archivo</button><span class="status" id="status"></span></div>
@@ -72,7 +75,8 @@ function processRows(rows){
  const dates=[...new Set(tickets.map(t=>t.date))];
  if(dates.length>1)throw new Error('El archivo contiene más de una fecha de venta. Separa los reportes por día antes de procesarlos.');
  const sum=tickets.reduce((s,t)=>s+t.total,0);
- const netSum=tickets.every(t=>Number.isFinite(t.net))?tickets.reduce((s,t)=>s+t.net,0):null;\n return {date:dates[0],tickets,sum,base:sum/1.16,netSum};
+ const netSum=tickets.every(t=>Number.isFinite(t.net))?tickets.reduce((s,t)=>s+t.net,0):null;
+ return {date:dates[0],tickets,sum,base:sum/1.16,netSum};
 }
 async function loadFile(file){
  if(!file)return;
@@ -84,9 +88,11 @@ async function loadFile(file){
   const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
   resultData=processRows(rows);sourceName=file.name;
   $('filemeta').textContent='Archivo cargado: '+file.name;
-  $('reportdate').textContent=resultData.date;\n  $('count').textContent=resultData.tickets.length;
+  $('reportdate').textContent=resultData.date;
+  $('count').textContent=resultData.tickets.length;
   $('total').textContent=money(resultData.sum);
-  $('base').textContent=money(resultData.base);\n  $('net').textContent=resultData.netSum===null?'No disponible':money(resultData.netSum);
+  $('base').textContent=money(resultData.base);
+  $('net').textContent=resultData.netSum===null?'No disponible':money(resultData.netSum);
   $('rows').innerHTML=resultData.tickets.map(t=>'<tr><td>'+escapeHtml(t.folio)+'</td><td>'+money(t.total)+'</td></tr>').join('');
   $('tfootlabel').textContent='Total '+resultData.tickets.length+' documentos';
   $('tfootsum').textContent=money(resultData.sum);
