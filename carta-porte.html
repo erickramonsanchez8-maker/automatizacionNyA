@@ -9,6 +9,31 @@
 </style></head><body>
 <header><small>Automatización NyA · CONTPAQi Factura Electrónica</small><h1>Carta Porte Inteligente</h1><p>Recepción, organización y precaptura de datos · Autotransporte · Complemento Carta Porte 3.1</p></header>
 <main>
+
+<section class="card noPrint" id="clientDirectory">
+ <div class="sectionhead"><b>00</b><h2>Directorio de clientes · Constancia fiscal</h2></div>
+ <p class="hint">Registra una vez la Constancia de Situación Fiscal de cada cliente. Al seleccionarlo, NyA completa los campos fiscales del receptor. Los datos quedan guardados en este navegador.</p>
+ <div class="grid">
+  <div class="field"><label>Cliente guardado</label><select id="clientSelect"><option value="">— Selecciona un cliente —</option></select></div>
+  <div class="field"><label>Alias interno (opcional)</label><input id="clientAlias" placeholder="Ej. Cliente de maíz"></div>
+  <div class="field"><label>Constancia de Situación Fiscal (PDF o XML)</label><input id="taxFile" type="file" accept=".pdf,.xml,application/pdf,text/xml,application/xml"></div>
+ </div>
+ <div class="actions" style="margin-top:12px">
+  <button class="btn primary" id="readTax" type="button">Leer constancia y guardar cliente</button>
+  <button class="btn" id="saveClientManual" type="button">Guardar datos manualmente</button>
+  <button class="btn" id="newClient" type="button">Nuevo cliente</button>
+  <button class="btn remove" id="deleteClient" type="button">Eliminar seleccionado</button>
+  <span class="status" id="clientStatus" role="status" aria-live="polite">Directorio listo.</span>
+ </div>
+ <div class="grid" style="margin-top:12px">
+  <div class="field"><label>RFC</label><input id="clientRfc" placeholder="RFC fiscal"></div>
+  <div class="field"><label>Razón social / nombre fiscal</label><input id="clientName" placeholder="Como aparece en la constancia"></div>
+  <div class="field"><label>Código postal fiscal</label><input id="clientZip" placeholder="5 dígitos"></div>
+  <div class="field"><label>Régimen fiscal receptor</label><input id="clientRegime" placeholder="Clave o descripción"></div>
+  <div class="field"><label>Correo (si aparece)</label><input id="clientEmail" placeholder="Correo electrónico"></div>
+ </div>
+ <div id="clientSummary" class="notice" style="margin-top:12px">Selecciona un cliente o carga una constancia fiscal.</div>
+</section>
 <section class="card noPrint">
  <div class="sectionhead"><b>01</b><h2>Recibe la solicitud del cliente</h2></div>
  <p class="hint">Carga PDF, imágenes, documentos o audio. También puedes pegar mensajes y transcripciones. El análisis local extrae texto de PDF y archivos de texto; las imágenes intentan OCR cuando el servicio está disponible.</p>
@@ -22,7 +47,7 @@
  <p class="hint">Captura o corrige los valores detectados. Deja vacío lo que no venga en la solicitud; se marcará como pendiente en el reporte.</p>
  <div class="sectionhead"><b>A</b><h2>Datos del CFDI</h2></div>
  <div class="grid">
- <div class="field"><label>Tipo de comprobante</label><input data-field="cfdi.0" placeholder="Pendiente"></div><div class="field"><label>Folio</label><input data-field="cfdi.1" placeholder="Pendiente"></div><div class="field"><label>Fecha de emisión</label><input data-field="cfdi.2" placeholder="Pendiente"></div><div class="field"><label>RFC emisor</label><input data-field="cfdi.3" placeholder="Pendiente"></div><div class="field"><label>Nombre emisor</label><input data-field="cfdi.4" placeholder="Pendiente"></div><div class="field"><label>Régimen fiscal emisor</label><input data-field="cfdi.5" placeholder="Pendiente"></div><div class="field"><label>Lugar de expedición</label><input data-field="cfdi.6" placeholder="Pendiente"></div><div class="field"><label>RFC receptor</label><input data-field="cfdi.7" placeholder="Pendiente"></div><div class="field"><label>Nombre receptor</label><input data-field="cfdi.8" placeholder="Pendiente"></div><div class="field"><label>Uso CFDI</label><input data-field="cfdi.9" placeholder="Pendiente"></div><div class="field"><label>Domicilio receptor</label><input data-field="cfdi.10" placeholder="Pendiente"></div><div class="field"><label>Forma de pago</label><input data-field="cfdi.11" placeholder="Pendiente"></div><div class="field"><label>Método de pago</label><input data-field="cfdi.12" placeholder="Pendiente"></div><div class="field"><label>Moneda</label><input data-field="cfdi.13" placeholder="Pendiente"></div><div class="field"><label>Tipo de cambio</label><input data-field="cfdi.14" placeholder="Pendiente"></div><div class="field"><label>Clave producto/servicio</label><input data-field="cfdi.15" placeholder="Pendiente"></div><div class="field"><label>Cantidad concepto</label><input data-field="cfdi.16" placeholder="Pendiente"></div><div class="field"><label>Unidad</label><input data-field="cfdi.17" placeholder="Pendiente"></div><div class="field"><label>Clave unidad SAT</label><input data-field="cfdi.18" placeholder="Pendiente"></div><div class="field"><label>Descripción del concepto</label><input data-field="cfdi.19" placeholder="Pendiente"></div><div class="field"><label>Valor unitario</label><input data-field="cfdi.20" placeholder="Pendiente"></div><div class="field"><label>Descuento</label><input data-field="cfdi.21" placeholder="Pendiente"></div><div class="field"><label>Impuestos trasladados</label><input data-field="cfdi.22" placeholder="Pendiente"></div><div class="field"><label>Retención IVA</label><input data-field="cfdi.23" placeholder="Pendiente"></div><div class="field"><label>Subtotal</label><input data-field="cfdi.24" placeholder="Pendiente"></div><div class="field"><label>Total</label><input data-field="cfdi.25" placeholder="Pendiente"></div>
+ <div class="field"><label>Tipo de comprobante</label><input data-field="cfdi.0" placeholder="Pendiente"></div><div class="field"><label>Folio</label><input data-field="cfdi.1" placeholder="Pendiente"></div><div class="field"><label>Fecha de emisión</label><input data-field="cfdi.2" placeholder="Pendiente"></div><div class="field"><label>RFC emisor</label><input data-field="cfdi.3" placeholder="Pendiente"></div><div class="field"><label>Nombre emisor</label><input data-field="cfdi.4" placeholder="Pendiente"></div><div class="field"><label>Régimen fiscal emisor</label><input data-field="cfdi.5" placeholder="Pendiente"></div><div class="field"><label>Lugar de expedición</label><input data-field="cfdi.6" placeholder="Pendiente"></div><div class="field"><label>RFC receptor</label><input data-field="cfdi.7" placeholder="Pendiente"></div><div class="field"><label>Nombre receptor</label><input data-field="cfdi.8" placeholder="Pendiente"></div><div class="field"><label>Uso CFDI</label><input data-field="cfdi.9" placeholder="Pendiente"></div><div class="field"><label>Domicilio receptor</label><input data-field="cfdi.10" placeholder="Pendiente"></div><div class="field"><label>Forma de pago</label><input data-field="cfdi.11" placeholder="Pendiente"></div><div class="field"><label>Método de pago</label><input data-field="cfdi.12" placeholder="Pendiente"></div><div class="field"><label>Código postal fiscal receptor</label><input data-field="cfdi.26" placeholder="Pendiente"></div><div class="field"><label>Régimen fiscal receptor</label><input data-field="cfdi.27" placeholder="Pendiente"></div><div class="field"><label>Moneda</label><input data-field="cfdi.13" placeholder="Pendiente"></div><div class="field"><label>Tipo de cambio</label><input data-field="cfdi.14" placeholder="Pendiente"></div><div class="field"><label>Clave producto/servicio</label><input data-field="cfdi.15" placeholder="Pendiente"></div><div class="field"><label>Cantidad concepto</label><input data-field="cfdi.16" placeholder="Pendiente"></div><div class="field"><label>Unidad</label><input data-field="cfdi.17" placeholder="Pendiente"></div><div class="field"><label>Clave unidad SAT</label><input data-field="cfdi.18" placeholder="Pendiente"></div><div class="field"><label>Descripción del concepto</label><input data-field="cfdi.19" placeholder="Pendiente"></div><div class="field"><label>Valor unitario</label><input data-field="cfdi.20" placeholder="Pendiente"></div><div class="field"><label>Descuento</label><input data-field="cfdi.21" placeholder="Pendiente"></div><div class="field"><label>Impuestos trasladados</label><input data-field="cfdi.22" placeholder="Pendiente"></div><div class="field"><label>Retención IVA</label><input data-field="cfdi.23" placeholder="Pendiente"></div><div class="field"><label>Subtotal</label><input data-field="cfdi.24" placeholder="Pendiente"></div><div class="field"><label>Total</label><input data-field="cfdi.25" placeholder="Pendiente"></div>
  </div>
 </section>
 <section class="card">
@@ -56,6 +81,115 @@
 <script>
 const $=id=>document.getElementById(id), fields=()=>[...document.querySelectorAll('[data-field]')];
 let sources=[];
+
+const CLIENT_STORE='nya_carta_porte_clientes_v3';
+let clientProfiles=[],selectedClientId='';
+function clientStatus(message,isError=false){const el=$('clientStatus');if(el){el.textContent=message;el.style.color=isError?'#b42318':'#087e5b'}}
+function readLocalClients(){try{const a=JSON.parse(localStorage.getItem(CLIENT_STORE)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
+function persistClients(){try{localStorage.setItem(CLIENT_STORE,JSON.stringify(clientProfiles));return true}catch(e){clientStatus('No se pudo guardar: el navegador bloqueó el almacenamiento local. '+e.message,true);return false}}
+function updateReceiverFromClient(c){
+ if(!c)return;
+ const map={'cfdi.7':c.rfc,'cfdi.8':c.name,'cfdi.26':c.zip,'cfdi.27':c.regime};
+ Object.entries(map).forEach(([key,value])=>{const el=document.querySelector('[data-field="'+key+'"]');if(el&&value)el.value=value});
+ audit();
+}
+function showClient(){
+ const c=clientProfiles.find(x=>x.id===selectedClientId);
+ $('clientSummary').textContent=c?(c.alias||c.name)+' · RFC '+c.rfc+' · CP '+(c.zip||'No identificado')+' · Régimen '+(c.regime||'No identificado'):'Selecciona un cliente o carga una constancia fiscal.';
+ $('clientRfc').value=c?.rfc||'';$('clientName').value=c?.name||'';$('clientZip').value=c?.zip||'';$('clientRegime').value=c?.regime||'';$('clientEmail').value=c?.email||'';$('clientAlias').value=c?.alias||'';
+ if(c)updateReceiverFromClient(c);
+}
+function renderClientOptions(){
+ const sel=$('clientSelect');
+ sel.innerHTML='<option value="">— Selecciona un cliente —</option>'+clientProfiles.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.alias||c.name)+' · '+esc(c.rfc)+'</option>').join('');
+ sel.value=selectedClientId;showClient();
+}
+function normalizeRfc(v){return String(v||'').toUpperCase().replace(/\s+/g,'').trim()}
+function saveClientProfile(profile){
+ profile.rfc=normalizeRfc(profile.rfc);profile.name=String(profile.name||'').replace(/\s+/g,' ').trim();
+ profile.zip=String(profile.zip||'').trim();profile.regime=String(profile.regime||'').trim();profile.email=String(profile.email||'').trim();
+ if(!profile.rfc||!profile.name)throw Error('La constancia debe proporcionar RFC y nombre fiscal.'); 
+ if(!/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(profile.rfc))throw Error('El RFC no tiene el formato esperado de 12 o 13 caracteres.');
+ if(profile.zip&&!/^\d{5}$/.test(profile.zip))throw Error('El código postal debe tener cinco dígitos.');
+ const old=clientProfiles.find(c=>c.rfc===profile.rfc);
+ profile.id=old?.id||('nya_'+Date.now());profile.alias=String($('clientAlias').value||profile.alias||profile.name).trim();profile.updated=new Date().toISOString();
+ clientProfiles=old?clientProfiles.map(c=>c.rfc===profile.rfc?profile:c):[...clientProfiles,profile];
+ if(!persistClients())return false;
+ selectedClientId=profile.id;renderClientOptions();clientStatus('Cliente guardado y aplicado al receptor.');return true;
+}
+function extractLabel(text,pattern){
+ const m=String(text||'').match(pattern);return m?m[1].replace(/\s+/g,' ').trim().replace(/[|:;,]+$/,''):'';
+}
+function parseFiscalText(text,source){
+ const flat=String(text||'').replace(/\u00a0/g,' ').replace(/[|]/g,' ').replace(/\s+/g,' ').trim();
+ const rfc=(flat.match(/\b[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}\b/i)||[])[0]||'';
+ const zip=extractLabel(flat,/(?:c[oó]digo\s+postal|c\.?\s*p\.?)\s*:?\s*(\d{5})/i);
+ const legal=extractLabel(flat,/(?:denominaci[oó]n\s*\/\s*raz[oó]n\s*social|denominaci[oó]n\s+o\s+raz[oó]n\s+social)\s*:?\s*(.{3,120}?)(?=\s+(?:r[eé]gimen|rfc|c[oó]digo\s+postal|nombre\s+comercial)\b|$)/i);
+ const given=extractLabel(flat,/nombre\s*\(s\)\s*:?\s*(.{2,60}?)(?=\s+(?:primer\s+apellido|rfc|curp)\b|$)/i);
+ const first=extractLabel(flat,/primer\s+apellido\s*:?\s*(.{2,60}?)(?=\s+(?:segundo\s+apellido|rfc|curp)\b|$)/i);
+ const second=extractLabel(flat,/segundo\s+apellido\s*:?\s*(.{2,60}?)(?=\s+(?:rfc|curp)\b|$)/i);
+ const name=legal||[given,first,second].filter(Boolean).join(' ');
+ const regime=extractLabel(flat,/r[eé]gimen(?:\s+fiscal)?\s*:?\s*(.{3,120}?)(?=\s+(?:fecha|lugar|c[oó]digo|actividades|obligaciones|datos\s+de|nombre\s+comercial)\b|$)/i);
+ const email=extractLabel(flat,/correo\s+electr[oó]nico\s*:?\s*([^\s]+)/i);
+ if(!rfc||!name)throw Error('No pude reconocer RFC y nombre fiscal en el documento. Comprueba que sea la Constancia de Situación Fiscal completa y legible.');
+ return {rfc:rfc.toUpperCase(),name,zip,regime,email,source,updated:new Date().toISOString(),rawText:flat};
+}
+function parseTaxXml(xml){
+ const doc=new DOMParser().parseFromString(xml,'text/xml');if(doc.querySelector('parsererror'))throw Error('El XML no tiene estructura válida.');
+ const all=[...doc.getElementsByTagName('*')];
+ const rec=all.find(n=>n.localName?.toLowerCase()==='receptor');
+ if(rec){
+  const attr=k=>{const a=[...rec.attributes].find(x=>x.localName.toLowerCase()===k.toLowerCase());return a?.value||''};
+  return {rfc:attr('Rfc'),name:attr('Nombre'),zip:attr('DomicilioFiscalReceptor'),regime:attr('RegimenFiscalReceptor'),email:'',source:'XML CFDI',updated:new Date().toISOString()};
+ }
+ const findTag=(...names)=>{const n=all.find(x=>names.includes(x.localName.toLowerCase()));return n?.textContent?.trim()||''};
+ return {rfc:findTag('rfc'),name:findTag('nombre','denominacionrazonsocial'),zip:findTag('codigopostal'),regime:findTag('regimenfiscal'),email:findTag('correoelectronico'),source:'XML',updated:new Date().toISOString()};
+}
+async function ensurePdfJs(){
+ if(window.pdfjsLib)return window.pdfjsLib;
+ await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=resolve;s.onerror=()=>reject(Error('No se pudo cargar PDF.js desde el CDN. Revisa la conexión o la configuración de red.'));document.head.appendChild(s)});
+ if(!window.pdfjsLib)throw Error('PDF.js no se inicializó correctamente.');
+ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ return window.pdfjsLib;
+}
+async function ensureOcr(){
+ if(window.Tesseract)return window.Tesseract;
+ await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';s.onload=resolve;s.onerror=()=>reject(Error('No se pudo cargar Tesseract OCR desde el CDN.'));document.head.appendChild(s)});
+ if(!window.Tesseract)throw Error('Tesseract OCR no se inicializó correctamente.');return window.Tesseract;
+}
+async function readPdfAllText(file,useOcr=true){
+ const lib=await ensurePdfJs(),buf=new Uint8Array(await file.arrayBuffer()),pdf=await lib.getDocument({data:buf,disableWorker:true}).promise;
+ let text='';for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p),content=await page.getTextContent();text+='\n'+content.items.map(x=>x.str).join(' ')}
+ if(text.replace(/\s/g,'').length>35||!useOcr)return text;
+ const OCR=await ensureOcr(),worker=await OCR.createWorker('spa');
+ try{
+  let ocrText='';for(let p=1;p<=Math.min(pdf.numPages,4);p++){const page=await pdf.getPage(p),vp=page.getViewport({scale:2}),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');canvas.width=vp.width;canvas.height=vp.height;await page.render({canvasContext:ctx,viewport:vp}).promise;const res=await worker.recognize(canvas);ocrText+='\n'+res.data.text}
+  return ocrText;
+ }finally{await worker.terminate()}
+}
+async function handleReadTax(){
+ const f=$('taxFile').files[0];if(!f){clientStatus('Primero selecciona el PDF o XML de la constancia.',true);return}
+ const btn=$('readTax');btn.disabled=true;btn.textContent='Leyendo documento…';clientStatus('Abriendo y analizando la constancia. Puede tardar si requiere OCR.');
+ try{
+  let profile;if(/\.xml$/i.test(f.name)){profile=parseTaxXml(await f.text())}
+  else if(/\.pdf$/i.test(f.name)){const txt=await readPdfAllText(f,true);profile=parseFiscalText(txt,'PDF'+(txt.length<100?' / OCR':' leído'))}
+  else throw Error('Formato no compatible: usa PDF o XML.');
+  saveClientProfile(profile);
+ }catch(e){clientStatus(e.message||'No se pudo leer el documento.',true)}
+ finally{btn.disabled=false;btn.textContent='Leer constancia y guardar cliente'}
+}
+function saveManualClient(){
+ try{saveClientProfile({rfc:$('clientRfc').value,name:$('clientName').value,zip:$('clientZip').value,regime:$('clientRegime').value,email:$('clientEmail').value,source:'Captura manual'})}
+ catch(e){clientStatus(e.message,true)}
+}
+function initClientDirectory(){
+ clientProfiles=readLocalClients();selectedClientId='';$('clientSelect').onchange=e=>{selectedClientId=e.target.value;showClient()};
+ $('readTax').onclick=handleReadTax;$('saveClientManual').onclick=saveManualClient;
+ $('newClient').onclick=()=>{selectedClientId='';$('clientSelect').value='';['clientAlias','clientRfc','clientName','clientZip','clientRegime','clientEmail','taxFile'].forEach(id=>$(id).value='');showClient();clientStatus('Formulario listo para un cliente nuevo.')};
+ $('deleteClient').onclick=()=>{const c=clientProfiles.find(x=>x.id===selectedClientId);if(!c)return clientStatus('Selecciona el cliente que deseas eliminar.',true);if(!confirm('¿Eliminar el perfil '+c.name+' de este navegador?'))return;clientProfiles=clientProfiles.filter(x=>x.id!==selectedClientId);selectedClientId='';persistClients();renderClientOptions();clientStatus('Cliente eliminado del directorio local.')};
+ renderClientOptions();
+}
+
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function field(label,key){return '<div class="field"><label>'+esc(label)+'</label><input data-item="'+key+'" placeholder="Pendiente"></div>'}
 function addBlock(container,title,defs){const n=$(container).children.length+1;const div=document.createElement('div');div.className='subcard';div.innerHTML='<div class="top"><h3>'+title+' '+n+'</h3><button class="btn remove noPrint" type="button">Quitar</button></div><div class="grid">'+defs.map(d=>field(d[0],d[1])).join('')+'</div>';div.querySelector('.remove').onclick=()=>{div.remove();audit()};$(container).append(div)}
@@ -71,58 +205,95 @@ function audit(){const vals=fields().map(x=>x.value.trim()).filter(Boolean);$('c
 document.addEventListener('input',e=>{if(e.target.matches('[data-field],[data-item]'))audit()});
 $('files').onchange=e=>{sources=[...e.target.files].map(f=>({file:f,name:f.name,type:f.type||f.name.split('.').pop(),status:'Pendiente de lectura'}));$('filelist').textContent=sources.map(s=>s.name).join(' · ')||'Aún no has agregado archivos.'};
 $('clearSources').onclick=()=>{sources=[];$('files').value='';$('filelist').textContent='Aún no has agregado archivos.';$('sourceText').value=''};
-async function extract(){const status=$('extractStatus');status.textContent='Leyendo archivos…';let extracted=[];for(const s of sources){try{const ext=s.name.split('.').pop().toLowerCase();if(ext==='txt'||ext==='csv'){const t=await s.file.text();extracted.push('FUENTE: '+s.name+'\n'+t);s.status='Texto leído'}else if(ext==='pdf'){if(!window.pdfjsLib)throw Error('Lector PDF no disponible');const buf=await s.file.arrayBuffer(),pdf=await pdfjsLib.getDocument({data:buf}).promise;let t='';for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p),c=await page.getTextContent();t+='\n'+c.items.map(x=>x.str).join(' ')}if(!t.trim())throw Error('PDF sin texto seleccionable');extracted.push('FUENTE: '+s.name+'\n'+t);s.status='Texto PDF leído'}else if(['png','jpg','jpeg','webp'].includes(ext)){if(!window.Tesseract)throw Error('OCR no disponible');const r=await Tesseract.recognize(s.file,'spa');extracted.push('FUENTE OCR: '+s.name+'\n'+r.data.text);s.status='OCR ejecutado; revisar'}else if(ext==='docx'){throw Error('DOCX: guarda o exporta como PDF o TXT para leerlo en esta versión')}else if(['mp3','wav','m4a','ogg'].includes(ext)){s.status='Audio adjunto; falta transcripción';}else{s.status='Formato adjunto; requiere transcripción'}}catch(err){s.status='No leído: '+err.message}}if(extracted.length)$('sourceText').value=($('sourceText').value+'\n\n'+extracted.join('\n\n')).trim();$('filelist').innerHTML=sources.map(s=>esc(s.name)+' — '+esc(s.status)).join('<br>');status.textContent=extracted.length+' fuente(s) leídas. Revisa y confirma los datos.'}
+async function extract(){
+ const status=$('extractStatus');status.textContent='Leyendo archivos…';let extracted=[];
+ for(const s of sources){
+  try{
+   const ext=s.name.split('.').pop().toLowerCase();
+   if(ext==='txt'||ext==='csv'){extracted.push('FUENTE: '+s.name+'\n'+await s.file.text());s.status='Texto leído'}
+   else if(ext==='pdf'){const t=await readPdfAllText(s.file,true);if(!t.trim())throw Error('No se obtuvo texto del PDF');extracted.push('FUENTE: '+s.name+'\n'+t);s.status='PDF leído'+(t.length<100?' con OCR':'')}
+   else if(['png','jpg','jpeg','webp'].includes(ext)){
+    const OCR=await ensureOcr(),worker=await OCR.createWorker('spa');
+    try{const res=await worker.recognize(s.file);extracted.push('FUENTE OCR: '+s.name+'\n'+res.data.text);s.status='OCR ejecutado; revisar'}finally{await worker.terminate()}
+   }
+   else if(ext==='docx')throw Error('DOCX no está habilitado aún: expórtalo a PDF o TXT.');
+   else if(['mp3','wav','m4a','ogg'].includes(ext))s.status='Audio adjunto; esta versión no transcribe audio automáticamente';
+   else s.status='Formato no compatible';
+  }catch(err){s.status='No leído: '+err.message}
+ }
+ if(extracted.length)$('sourceText').value=($('sourceText').value+'\n\n'+extracted.join('\n\n')).trim();
+ $('filelist').innerHTML=sources.map(s=>esc(s.name)+' — '+esc(s.status)).join('<br>');
+ status.textContent=extracted.length+' fuente(s) leídas; '+sources.filter(s=>s.status.startsWith('No leído')).length+' con error.';
+}
 
-function norm(s){return String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase()}
+function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
 function findMatch(text,patterns){for(const re of patterns){const m=text.match(re);if(m&&m[1])return m[1].trim().replace(/[.,;]+$/,'')}return ''}
-function setCandidate(key,value,why,confidence='Alta'){if(!value)return;const el=document.querySelector('[data-field="'+key+'"]');if(!el)return;analysisCandidates.push({key,value,why,confidence,existing:!!el.value.trim()})}
 let analysisCandidates=[];
+function pushCandidate(key,value,why,confidence='Media'){
+ if(!value)return;
+ const el=document.querySelector('[data-field="'+key+'"]');
+ analysisCandidates.push({key,value,why,confidence,existing:!!el?.value.trim()});
+}
 function analyzeRequest(){
  const raw=$('sourceText').value.trim();analysisCandidates=[];
  if(!raw){alert('Pega mensajes o transcripciones antes de analizar.');return}
- const t=norm(raw),has=(...w)=>w.some(x=>t.includes(x));
- // Dates, times and distance
- let date=findMatch(t,[/\\b(el\\s+)?(\\d{1,2}\\s+de\\s+[a-z]+(?:\\s+de\\s+\\d{4})?)/i,/\\b(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\b/]);
- if(date)setCandidate('porte.0','3.1','Versión de complemento usada como referencia del módulo; confirmar vigencia/configuración en CONTPAQi.','Media');
- let distance=findMatch(t,[/\\b(?:distancia|recorrido)\\s*(?:total)?\\s*(?:de)?\\s*(\\d+(?:[.,]\\d+)?)\\s*(?:km|kilometros)\\b/,/\\b(\\d+(?:[.,]\\d+)?)\\s*(?:km|kilometros)\\b/]);
- if(distance)setCandidate('porte.5',distance.replace(',','.'),'Cantidad expresada en kilómetros.','Media');
- let weight=findMatch(t,[/\\b(?:peso|pesan|pesando)\\s*(?:total)?\\s*(?:de)?\\s*(\\d+(?:[.,]\\d+)?)\\s*(?:kg|kilos|kilogramos)\\b/]);
- if(weight)setCandidate('goodsTotals.0',weight.replace(',','.'),'Peso mencionado explícitamente en kg.','Alta');
- // RFCs, plates and license
- const rfcs=[...raw.matchAll(/\\b[A-ZÑ&]{3,4}\\d{6}[A-Z0-9]{3}\\b/gi)].map(m=>m[0].toUpperCase());
- if(rfcs[0])setCandidate('cfdi.3',rfcs[0],'Primer RFC localizado; confirmar si corresponde al emisor.','Media');
- if(rfcs[1])setCandidate('cfdi.7',rfcs[1],'Segundo RFC localizado; confirmar si corresponde al receptor.','Media');
- const plate=findMatch(t,[/\\b(?:placas?|matricula)\\s*(?:del camion|del tractocamion|del vehiculo)?\\s*(?:son|es|:)?\\s*([a-z]{2,3}[- ]?\\d{2,4}[- ]?[a-z0-9]{0,3})\\b/i]);
- if(plate)setCandidate('vehicle.3',plate.toUpperCase(),'Texto cercano a “placa(s)”.','Alta');
- const license=findMatch(t,[/\\b(?:licencia|licencia federal)\\s*(?:del operador)?\\s*(?:numero|no\.?|:)?\\s*([a-z0-9-]{5,})/i]);
- if(license)setCandidate('figures.0',license,'Se detectó una posible licencia; requiere confirmar tipo de figura y número.','Baja');
- // Commodity description and quantity
- const commodity=findMatch(raw,[/(?:mercancia|producto|material|carga)\\s*(?:es|:|consiste en|que llevamos)?\\s*([^.;\\n]{3,90})/i,/(?:transportamos|vamos a transportar|se transportan)\\s+([^.;\\n]{3,90})/i]);
- if(commodity){const first=$('goods').children[0]?.querySelector('[data-item="description"]');if(first&&!first.value)first.value=commodity;analysisCandidates.push({key:'goods.description',value:commodity,why:'Descripción deducida por el contexto de mercancía; verificar que no incluya instrucciones adicionales.',confidence:'Media',existing:false})}
- const qty=findMatch(t,[/\\b(?:son|cantidad|llevamos|van)\\s+(\\d+(?:[.,]\\d+)?)\\s*(?:piezas|cajas|tarimas|toneladas|bultos)\\b/]);
- if(qty){const first=$('goods').children[0]?.querySelector('[data-item="qty"]');if(first&&!first.value)first.value=qty;analysisCandidates.push({key:'goods.qty',value:qty,why:'Cantidad indicada en el mensaje; confirmar unidad.',confidence:'Media',existing:false})}
- // Location intent: extract the phrase after explicit pickup/delivery cues.
- const origin=findMatch(raw,[/(?:recoger|recolectar|cargar|sale|salida)\\s+(?:la mercancia\\s+)?(?:en|desde|de)\\s+([^.;\\n]{3,100})/i,/(?:origen)\\s*(?:es|:|en)?\\s*([^.;\\n]{3,100})/i]);
- const dest=findMatch(raw,[/(?:entregar|destino|descargar|llegar)\\s+(?:la mercancia\\s+)?(?:en|a|hasta)\\s+([^.;\\n]{3,100})/i]);
- if(origin){addLocIfNeeded();const card=$('locations').children[0];const typ=card.querySelector('[data-item="type"]');const addr=card.querySelector('[data-item="address"]');if(typ&&!typ.value)typ.value='Origen';if(addr&&!addr.value)addr.value=origin;analysisCandidates.push({key:'location.origin',value:origin,why:'Lugar asociado a verbos de recolección/carga/salida. Revisar domicilio completo.',confidence:'Media',existing:!!addr?.value&&addr.value!==origin})}
- if(dest){addLocIfNeeded();const card=$('locations').children[Math.min(1,$('locations').children.length-1)];const typ=card.querySelector('[data-item="type"]');const addr=card.querySelector('[data-item="address"]');if(typ&&!typ.value)typ.value='Destino';if(addr&&!addr.value)addr.value=dest;analysisCandidates.push({key:'location.destination',value:dest,why:'Lugar asociado a entrega/destino/descarga. Revisar domicilio completo.',confidence:'Media',existing:!!addr?.value&&addr.value!==dest})}
- const time=findMatch(t,[/\\b(?:a las|hora de carga|hora de recoleccion)\\s+(\\d{1,2}(?::\\d{2})?\\s*(?:am|pm|hrs?)?)/]);
+ const t=norm(raw),has=(...words)=>words.some(w=>t.includes(w));
+ const origin=findMatch(t,[/(?:recoger|recolectar|cargar|sale|salida)\s+(?:la mercancia\s+)?(?:en|desde|de)\s+([^.;\n]{3,100})/i,/\borigen\s*(?:es|:|en)?\s*([^.;\n]{3,100})/i]);
+ const dest=findMatch(t,[/(?:entregar|destino|descargar|llegar)\s+(?:la mercancia\s+)?(?:en|a|hasta)?\s*([^.;\n]{3,100})/i]);
+ const goodsText=findMatch(t,[/(?:mercancia|producto|material|carga)\s*(?:es|:|consiste en|que llevamos)?\s*([^.;\n]{3,90})/i,/(?:transportamos|vamos a transportar|se transportan)\s+([^.;\n]{3,90})/i]);
+ const qtyMatch=t.match(/\b(?:son|cantidad|llevamos|van|transportamos|aproximadamente)\s+(\d+(?:[.,]\d+)?)\s*(toneladas?|kgs?|kilogramos?|kilos?|piezas?|cajas?|tarimas?|bultos?)\b/i);
+ const weight=findMatch(t,[/\b(?:peso|pesan|pesando)\s*(?:total)?\s*(?:de|:)?\s*(\d+(?:[.,]\d+)?)\s*(?:kg|kgs|kilos|kilogramos)\b/i]);
+ const distance=findMatch(t,[/\b(?:distancia|recorrido)\s*(?:total)?\s*(?:de|:)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometros)\b/i,/\b(\d+(?:[.,]\d+)?)\s*(?:km|kilometros)\b/i]);
+ const plates=findMatch(t,[/\b(?:placas?|matricula)\s*(?:del camion|del tractocamion|del vehiculo)?\s*(?:son|es|:)?\s*([a-z]{2,3}[- ]?\d{2,4}[- ]?[a-z0-9]{0,3})\b/i]);
+ const license=findMatch(t,[/\b(?:licencia|licencia federal)\s*(?:del operador)?\s*(?:numero|no\.?|:)?\s*([a-z0-9-]{5,})/i]);
+ const rfcs=[...raw.matchAll(/\b[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}\b/gi)].map(m=>m[0].toUpperCase());
+ if(distance)pushCandidate('porte.5',distance.replace(',','.'),'Distancia expresada en kilómetros.','Alta');
+ if(weight)pushCandidate('goodsTotals.0',weight.replace(',','.'),'Peso expresado explícitamente en kg.','Alta');
+ if(plates)pushCandidate('vehicle.3',plates.toUpperCase(),'Posible matrícula; confirmar contra tarjeta de circulación.','Media');
+ if(rfcs.length===1)pushCandidate('cfdi.7',rfcs[0],'RFC único detectado. Confirma que corresponda al receptor y no a otro participante.','Media');
+ if(rfcs.length>=2){pushCandidate('cfdi.3',rfcs[0],'Primer RFC detectado; asignación provisional al emisor, confirmar.','Baja');pushCandidate('cfdi.7',rfcs[1],'Segundo RFC detectado; asignación provisional al receptor, confirmar.','Baja')}
+ const explicitDate=findMatch(t,[/(?:fecha de emision|emitir el)\s*(?:es|:|el)?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i]);
+ if(explicitDate)pushCandidate('cfdi.2',explicitDate,'Fecha de emisión indicada explícitamente.','Alta');
+ const dateRelative=/\b(hoy|mañana|manana|pasado mañana|pasado manana|el lunes|el martes|el miercoles|el jueves|el viernes|el sabado|el domingo)\b/.test(t);
+ if(goodsText){const el=$('goods').children[0]?.querySelector('[data-item="description"]');if(el&&!el.value)analysisCandidates.push({key:'goods.description',value:goodsText,why:'Descripción asociada a mercancía; revisar que no incluya instrucciones adicionales.',confidence:'Media',existing:false})}
+ if(qtyMatch){const el=$('goods').children[0]?.querySelector('[data-item="qty"]');if(el&&!el.value)analysisCandidates.push({key:'goods.qty',value:qtyMatch[1],why:'Cantidad detectada; revisar la unidad indicada: '+qtyMatch[2]+'.',confidence:'Media',existing:false});}
+ if(origin)analysisCandidates.push({key:'location.origin',value:origin,why:'Lugar asociado a recolección, carga u origen. Confirmar domicilio completo.',confidence:'Media',existing:false});
+ if(dest)analysisCandidates.push({key:'location.destination',value:dest,why:'Lugar asociado a entrega o destino. Confirmar domicilio completo.',confidence:'Media',existing:false});
+ if(license)analysisCandidates.push({key:'figure.license',value:license,why:'Posible licencia del operador. Confirmar número y tipo de figura.',confidence:'Baja',existing:false});
  const findings=[];
- if(has('mañana','manana','hoy','pasado mañana','pasado manana'))findings.push('Se menciona una fecha relativa. Debe convertirse a fecha calendario confirmada antes de emitir.');
- if(has('internacional','aduana','importacion','exportacion','pedimento'))findings.push('La solicitud parece involucrar operación internacional/aduanera. Revisar los datos aduaneros aplicables.');
- if(has('remolque','caja seca','plataforma','refrigerada'))findings.push('Se menciona equipo o tipo de remolque; confirmar configuración vehicular, placas y datos del equipo.');
- if(rfcs.length>2)findings.push('Se localizaron varios RFC; asignar cada uno a su participante antes de capturar.');
- if(has('tonelada','toneladas'))findings.push('La cantidad está expresada en toneladas. No convertir ni asignar como peso en kg sin confirmar el dato y la unidad.');
- if(time)findings.push('Hora detectada: '+time+'. La ficha actual requiere confirmar fecha, zona horaria y ubicación asociada.');
- const unique=analysisCandidates.filter((x,i,a)=>a.findIndex(y=>y.key===x.key&&y.value===x.value)===i);
- analysisCandidates=unique;
+ if(dateRelative)findings.push('Se menciona una fecha relativa; conviértela a día, mes y año exactos.');
+ if(has('internacional','aduana','importacion','exportacion','pedimento'))findings.push('Hay indicios de operación internacional/aduanera. Revisa régimen, pedimento y documentación aplicable.');
+ if(has('remolque','caja seca','plataforma','refrigerada','thermo','full','torton','rabon'))findings.push('Se menciona equipo de transporte; confirma configuración SAT, permiso, placas, seguros y remolques.');
+ if(has('tonelada','toneladas'))findings.push('La carga se expresa en toneladas. No se convirtió automáticamente a kg ni se asignó como peso bruto sin confirmación.');
+ if(!origin)findings.push('No se identificó un origen completo con suficiente contexto.');
+ if(!dest)findings.push('No se identificó un destino completo con suficiente contexto.');
+ if(!goodsText)findings.push('No se identificó una descripción clara de mercancía.');
+ if(!qtyMatch)findings.push('No se detectó una cantidad con unidad inequívoca.');
+ if(!plates)findings.push('No se detectaron placas del vehículo.');
+ if(rfcs.length>2)findings.push('Hay varios RFC en el mensaje. Asigna cada uno al participante correcto.');
+ const unique=analysisCandidates.filter((x,i,a)=>a.findIndex(y=>y.key===x.key&&y.value===x.value)===i);analysisCandidates=unique;
  $('analysisBox').classList.remove('hidden');
- $('analysisSummary').textContent='Analicé el mensaje y encontré '+unique.length+' posible(s) dato(s). Las inferencias se muestran separadas de los datos explícitos; revisa antes de aplicarlas.';
- $('analysisItems').innerHTML=(unique.length?unique.map((x,i)=>'<div class="subcard"><div class="top"><b>'+esc(x.value)+'</b><span class="pill '+(x.confidence==='Alta'?'ok':'pending')+'">'+x.confidence+'</span></div><div class="hint">'+esc(x.key)+' · '+esc(x.why)+'</div><label><input type="checkbox" data-candidate="'+i+'" '+(x.confidence==='Alta'&&!x.existing?'checked':'')+'> Aplicar esta sugerencia</label></div>').join(''):'<p class="hint">No se encontraron datos estructurados con suficiente contexto. Agrega más detalles o adjunta otra fuente.');
- if(findings.length)$('analysisItems').insertAdjacentHTML('beforeend','<div class="notice warning"><b>Observaciones de contexto</b><br>'+findings.map(esc).join('<br>')+'</div>');
- $('applySuggestions').onclick=()=>{let applied=0;document.querySelectorAll('[data-candidate]:checked').forEach(ch=>{const x=analysisCandidates[Number(ch.dataset.candidate)];if(!x)return;let el=document.querySelector('[data-field="'+x.key+'"]');if(!el&&x.key.startsWith('goods.'))el=$('goods').children[0]?.querySelector('[data-item="'+x.key.split('.')[1]+'"]');if(el&&!el.value.trim()){el.value=x.value;applied++}});audit();$('extractStatus').textContent=applied+' sugerencia(s) aplicada(s). Verifica la asignación.'};
+ $('analysisSummary').textContent='Se encontraron '+unique.length+' dato(s) candidato(s). Las sugerencias están separadas de los datos confirmados.';
+ $('analysisItems').innerHTML=(unique.length?unique.map((x,i)=>'<div class="subcard"><div class="top"><b>'+esc(x.value)+'</b><span class="pill '+(x.confidence==='Alta'?'ok':'pending')+'">'+x.confidence+'</span></div><div class="hint">'+esc(x.key)+' · '+esc(x.why)+'</div><label><input type="checkbox" data-candidate="'+i+'" '+(x.confidence==='Alta'&&!x.existing?'checked':'')+'> Aplicar esta sugerencia</label></div>').join(''):'<p class="hint">No se encontraron datos estructurados con suficiente contexto.</p>');
+ if(findings.length)$('analysisItems').insertAdjacentHTML('beforeend','<div class="notice warning"><b>Por confirmar</b><br>'+findings.map(esc).join('<br>')+'</div>');
+ $('applySuggestions').onclick=()=>{
+  let applied=0;
+  document.querySelectorAll('[data-candidate]:checked').forEach(ch=>{
+   const x=analysisCandidates[Number(ch.dataset.candidate)];if(!x)return;let el=document.querySelector('[data-field="'+x.key+'"]');
+   if(x.key.startsWith('goods.'))el=$('goods').children[0]?.querySelector('[data-item="'+x.key.split('.')[1]+'"]');
+   if(x.key==='location.origin'||x.key==='location.destination'){
+    const index=x.key==='location.origin'?0:1;while($('locations').children.length<=index)addLoc();
+    const card=$('locations').children[index],type=card.querySelector('[data-item="type"]'),addr=card.querySelector('[data-item="address"]');
+    if(type&&!type.value)type.value=x.key==='location.origin'?'Origen':'Destino';if(addr&&!addr.value){addr.value=x.value;applied++}return;
+   }
+   if(x.key==='figure.license'){if(!$('figures').children.length)addFigure();el=$('figures').children[0]?.querySelector('[data-item="license"]')}
+   if(el&&!el.value.trim()){el.value=x.value;applied++}
+  });
+  audit();$('extractStatus').textContent=applied+' sugerencia(s) aplicada(s). Verifica todos los campos.';
+ };
  audit();
 }
+
 function addLocIfNeeded(){if(!$('locations').children.length)addLoc()}
 $('extract').onclick=async()=>{await extract();analyzeRequest()};
 $('sourceText').addEventListener('change',()=>{});
@@ -132,6 +303,7 @@ $('pdf').onclick=()=>{audit();window.print()};
 $('save').onclick=()=>{const blob=new Blob([JSON.stringify(allValues(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='NyA_CartaPorte_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)};
 $('load').onclick=()=>$('jsonFile').click();$('jsonFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{setValues(JSON.parse(await f.text()))}catch(err){alert('El archivo JSON no es válido.')}};
 $('reset').onclick=()=>{if(confirm('¿Limpiar todos los datos de esta ficha?')){fields().forEach(x=>x.value='');setValues({});$('sourceText').value='';audit()}};
+try{initClientDirectory()}catch(e){console.error(e);clientStatus('Error de inicio: '+e.message,true)}
 audit();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
