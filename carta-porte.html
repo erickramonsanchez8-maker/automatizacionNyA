@@ -172,7 +172,7 @@ async function handleReadTax(){
  const btn=$('readTax');btn.disabled=true;btn.textContent='Leyendo documento…';clientStatus('Abriendo y analizando la constancia. Puede tardar si requiere OCR.');
  try{
   let profile;if(/\.xml$/i.test(f.name)){profile=parseTaxXml(await f.text())}
-  else if(/\.pdf$/i.test(f.name)){let txt=await readPdfAllText(f,false);try{profile=parseFiscalText(txt,'PDF leído')}catch(firstError){txt=await readPdfAllText(f,true,true);profile=parseFiscalText(txt,'PDF / OCR')}}
+  else if(/\.pdf$/i.test(f.name)){let txt=await readPdfAllText(f,false),base=null;try{base=parseFiscalText(txt,'PDF leído')}catch(firstError){}if(!base||!base.zip||!base.regime){clientStatus('El PDF necesita OCR para completar los datos fiscales.');const ocrText=await readPdfAllText(f,true,true),ocrProfile=parseFiscalText(ocrText,'PDF / OCR');profile={...ocrProfile,rfc:base?.rfc||ocrProfile.rfc,name:base?.name||ocrProfile.name,zip:base?.zip||ocrProfile.zip,regime:base?.regime||ocrProfile.regime,email:base?.email||ocrProfile.email}}else profile=base}
   else throw Error('Formato no compatible: usa PDF o XML.');
   saveClientProfile(profile);
  }catch(e){clientStatus(e.message||'No se pudo leer el documento.',true)}
@@ -238,14 +238,15 @@ function analyzeRequest(){
  const raw=$('sourceText').value.trim();analysisCandidates=[];
  if(!raw){alert('Pega mensajes o transcripciones antes de analizar.');return}
  const t=norm(raw),has=(...words)=>words.some(w=>t.includes(w));
- const origin=findMatch(t,[/(?:recoger|recolectar|cargar|sale|salida)\s+(?:la mercancia\s+)?(?:en|desde|de)\s+([^.;\n]{3,100})/i,/\borigen\s*(?:es|:|en)?\s*([^.;\n]{3,100})/i]);
- const dest=findMatch(t,[/(?:entregar|destino|descargar|llegar)\s+(?:la mercancia\s+)?(?:en|a|hasta)?\s*([^.;\n]{3,100})/i]);
- const goodsText=findMatch(t,[/(?:mercancia|producto|material|carga)\s*(?:es|:|consiste en|que llevamos)?\s*([^.;\n]{3,90})/i,/(?:transportamos|vamos a transportar|se transportan)\s+([^.;\n]{3,90})/i]);
- const qtyMatch=t.match(/\b(?:son|cantidad|llevamos|van|transportamos|aproximadamente)\s+(\d+(?:[.,]\d+)?)\s*(toneladas?|kgs?|kilogramos?|kilos?|piezas?|cajas?|tarimas?|bultos?)\b/i);
+ const origin=findMatch(t,[/(?:recoger|recolectar|recogemos|cargar|cargamos|sale|salida)\s+(?:la mercancia\s+)?(?:en|desde|de)\s+([^.;\n]{3,100})/i,/\borigen\s*(?:es|:|en)?\s*([^.;\n]{3,100})/i,/\b(?:bodega|almacen|planta)\s+(?:de|en)\s+([^.;\n]{3,80})/i]);
+ const dest=findMatch(t,[/(?:entregar|entrega|destino|descargar|llegar|llevar|dejar)\s+(?:la mercancia\s+)?(?:en|a|hasta)\s+([^.;\n]{3,100})/i,/\bse entrega\s+(?:el\s+\w+\s+)?(?:en|a)\s+([^.;\n]{3,100})/i]);
+ const goodsText=findMatch(t,[/(?:mercancia|producto|material|carga)\s*(?:es|:|consiste en|que llevamos|de)?\s*([^.;\n]{3,90})/i,/(?:transportamos|vamos a transportar|se transportan)\s+([^.;\n]{3,90})/i,/\d+(?:[.,]\d+)?\s*(?:toneladas?|kgs?|kilogramos?|kilos?|piezas?|cajas?|tarimas?|bultos?)\s+de\s+([^.;\n]{2,70})/i]);
+ const qtyMatch=t.match(/\b(?:(?:son|cantidad|llevamos|van|transportamos|aproximadamente)\s+)?(\d+(?:[.,]\d+)?)\s*(toneladas?|kgs?|kilogramos?|kilos?|piezas?|cajas?|tarimas?|bultos?)\b/i);
  const weight=findMatch(t,[/\b(?:peso|pesan|pesando)\s*(?:total)?\s*(?:de|:)?\s*(\d+(?:[.,]\d+)?)\s*(?:kg|kgs|kilos|kilogramos)\b/i]);
  const distance=findMatch(t,[/\b(?:distancia|recorrido)\s*(?:total)?\s*(?:de|:)?\s*(\d+(?:[.,]\d+)?)\s*(?:km|kilometros)\b/i,/\b(\d+(?:[.,]\d+)?)\s*(?:km|kilometros)\b/i]);
  const plates=findMatch(t,[/\b(?:placas?|matricula)\s*(?:del camion|del tractocamion|del vehiculo)?\s*(?:son|es|:)?\s*([a-z]{2,3}[- ]?\d{2,4}[- ]?[a-z0-9]{0,3})\b/i]);
  const license=findMatch(t,[/\b(?:licencia|licencia federal)\s*(?:del operador)?\s*(?:numero|no\.?|:)?\s*([a-z0-9-]{5,})/i]);
+ const driver=findMatch(raw,[/(?:operador|chofer|conductor)\s*(?:es|:|se llama)?\s*([^,.;\n]{5,60})/i]);
  const rfcs=[...raw.matchAll(/\b[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}\b/gi)].map(m=>m[0].toUpperCase());
  if(distance)pushCandidate('porte.5',distance.replace(',','.'),'Distancia expresada en kilómetros.','Alta');
  if(weight)pushCandidate('goodsTotals.0',weight.replace(',','.'),'Peso expresado explícitamente en kg.','Alta');
@@ -260,6 +261,7 @@ function analyzeRequest(){
  if(origin)analysisCandidates.push({key:'location.origin',value:origin,why:'Lugar asociado a recolección, carga u origen. Confirmar domicilio completo.',confidence:'Media',existing:false});
  if(dest)analysisCandidates.push({key:'location.destination',value:dest,why:'Lugar asociado a entrega o destino. Confirmar domicilio completo.',confidence:'Media',existing:false});
  if(license)analysisCandidates.push({key:'figure.license',value:license,why:'Posible licencia del operador. Confirmar número y tipo de figura.',confidence:'Baja',existing:false});
+ if(driver)analysisCandidates.push({key:'figure.name',value:driver,why:'Nombre cercano a operador/chofer/conductor. Confirmar que no incluya otra instrucción.',confidence:'Media',existing:false});
  const findings=[];
  if(dateRelative)findings.push('Se menciona una fecha relativa; conviértela a día, mes y año exactos.');
  if(has('internacional','aduana','importacion','exportacion','pedimento'))findings.push('Hay indicios de operación internacional/aduanera. Revisa régimen, pedimento y documentación aplicable.');
@@ -286,7 +288,7 @@ function analyzeRequest(){
     const card=$('locations').children[index],type=card.querySelector('[data-item="type"]'),addr=card.querySelector('[data-item="address"]');
     if(type&&!type.value)type.value=x.key==='location.origin'?'Origen':'Destino';if(addr&&!addr.value){addr.value=x.value;applied++}return;
    }
-   if(x.key==='figure.license'){if(!$('figures').children.length)addFigure();el=$('figures').children[0]?.querySelector('[data-item="license"]')}
+   if(x.key==='figure.license'||x.key==='figure.name'){if(!$('figures').children.length)addFigure();el=$('figures').children[0]?.querySelector('[data-item="'+(x.key==='figure.license'?'license':'name')+'"]')}
    if(el&&!el.value.trim()){el.value=x.value;applied++}
   });
   audit();$('extractStatus').textContent=applied+' sugerencia(s) aplicada(s). Verifica todos los campos.';
