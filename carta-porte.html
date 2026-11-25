@@ -85,7 +85,7 @@ let sources=[];
 const CLIENT_STORE='nya_carta_porte_clientes_v3';
 let clientProfiles=[],selectedClientId='';
 function clientStatus(message,isError=false){const el=$('clientStatus');if(el){el.textContent=message;el.style.color=isError?'#b42318':'#087e5b'}}
-function readLocalClients(){try{const a=JSON.parse(localStorage.getItem(CLIENT_STORE)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
+function readLocalClients(){try{let a=JSON.parse(localStorage.getItem(CLIENT_STORE)||'null');if(Array.isArray(a))return a;const legacy=JSON.parse(localStorage.getItem('nya_carta_porte_clients_v2')||'[]');return Array.isArray(legacy)?legacy:[]}catch(e){return []}}
 function persistClients(){try{localStorage.setItem(CLIENT_STORE,JSON.stringify(clientProfiles));return true}catch(e){clientStatus('No se pudo guardar: el navegador bloqueó el almacenamiento local. '+e.message,true);return false}}
 function updateReceiverFromClient(c){
  if(!c)return;
@@ -157,10 +157,10 @@ async function ensureOcr(){
  await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';s.onload=resolve;s.onerror=()=>reject(Error('No se pudo cargar Tesseract OCR desde el CDN.'));document.head.appendChild(s)});
  if(!window.Tesseract)throw Error('Tesseract OCR no se inicializó correctamente.');return window.Tesseract;
 }
-async function readPdfAllText(file,useOcr=true){
+async function readPdfAllText(file,useOcr=true,forceOcr=false){
  const lib=await ensurePdfJs(),buf=new Uint8Array(await file.arrayBuffer()),pdf=await lib.getDocument({data:buf,disableWorker:true}).promise;
  let text='';for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p),content=await page.getTextContent();text+='\n'+content.items.map(x=>x.str).join(' ')}
- if(text.replace(/\s/g,'').length>35||!useOcr)return text;
+ if((text.replace(/\s/g,'').length>35&&!forceOcr)||!useOcr)return text;
  const OCR=await ensureOcr(),worker=await OCR.createWorker('spa');
  try{
   let ocrText='';for(let p=1;p<=Math.min(pdf.numPages,4);p++){const page=await pdf.getPage(p),vp=page.getViewport({scale:2}),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');canvas.width=vp.width;canvas.height=vp.height;await page.render({canvasContext:ctx,viewport:vp}).promise;const res=await worker.recognize(canvas);ocrText+='\n'+res.data.text}
@@ -172,7 +172,7 @@ async function handleReadTax(){
  const btn=$('readTax');btn.disabled=true;btn.textContent='Leyendo documento…';clientStatus('Abriendo y analizando la constancia. Puede tardar si requiere OCR.');
  try{
   let profile;if(/\.xml$/i.test(f.name)){profile=parseTaxXml(await f.text())}
-  else if(/\.pdf$/i.test(f.name)){const txt=await readPdfAllText(f,true);profile=parseFiscalText(txt,'PDF'+(txt.length<100?' / OCR':' leído'))}
+  else if(/\.pdf$/i.test(f.name)){let txt=await readPdfAllText(f,false);try{profile=parseFiscalText(txt,'PDF leído')}catch(firstError){txt=await readPdfAllText(f,true,true);profile=parseFiscalText(txt,'PDF / OCR')}}
   else throw Error('Formato no compatible: usa PDF o XML.');
   saveClientProfile(profile);
  }catch(e){clientStatus(e.message||'No se pudo leer el documento.',true)}
@@ -303,7 +303,7 @@ $('pdf').onclick=()=>{audit();window.print()};
 $('save').onclick=()=>{const blob=new Blob([JSON.stringify(allValues(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='NyA_CartaPorte_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)};
 $('load').onclick=()=>$('jsonFile').click();$('jsonFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{setValues(JSON.parse(await f.text()))}catch(err){alert('El archivo JSON no es válido.')}};
 $('reset').onclick=()=>{if(confirm('¿Limpiar todos los datos de esta ficha?')){fields().forEach(x=>x.value='');setValues({});$('sourceText').value='';audit()}};
-try{initClientDirectory()}catch(e){console.error(e);clientStatus('Error de inicio: '+e.message,true)}
+window.addEventListener('error',e=>{const msg=e?.message||'Error de ejecución';if(document.getElementById('clientStatus'))clientStatus('Error JavaScript: '+msg,true)});window.addEventListener('unhandledrejection',e=>{const msg=e?.reason?.message||String(e?.reason||'Promesa rechazada');if(document.getElementById('clientStatus'))clientStatus('Error: '+msg,true)});try{initClientDirectory()}catch(e){console.error(e);clientStatus('Error de inicio: '+e.message,true)}
 audit();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
