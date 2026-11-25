@@ -95,7 +95,7 @@ function updateReceiverFromClient(c){
 }
 function showClient(){
  const c=clientProfiles.find(x=>x.id===selectedClientId);
- $('clientSummary').textContent=c?(c.alias||c.name)+' · RFC '+c.rfc+' · CP '+(c.zip||'No identificado')+' · Régimen '+(c.regime||'No identificado'):'Selecciona un cliente o carga una constancia fiscal.';
+ $('clientSummary').textContent=c?(c.alias||c.name)+' · RFC '+c.rfc+' · CP '+(c.zip||'No identificado')+' · Régimen '+(c.regime||'No identificado')+' · Fuente: '+(c.source||'Manual'):'Selecciona un cliente o carga una constancia fiscal.';
  $('clientRfc').value=c?.rfc||'';$('clientName').value=c?.name||'';$('clientZip').value=c?.zip||'';$('clientRegime').value=c?.regime||'';$('clientEmail').value=c?.email||'';$('clientAlias').value=c?.alias||'';
  if(c)updateReceiverFromClient(c);
 }
@@ -172,7 +172,7 @@ async function handleReadTax(){
  const btn=$('readTax');btn.disabled=true;btn.textContent='Leyendo documento…';clientStatus('Abriendo y analizando la constancia. Puede tardar si requiere OCR.');
  try{
   let profile;if(/\.xml$/i.test(f.name)){profile=parseTaxXml(await f.text())}
-  else if(/\.pdf$/i.test(f.name)){let txt=await readPdfAllText(f,false),base=null;try{base=parseFiscalText(txt,'PDF leído')}catch(firstError){}if(!base||!base.zip||!base.regime){clientStatus('El PDF necesita OCR para completar los datos fiscales.');const ocrText=await readPdfAllText(f,true,true),ocrProfile=parseFiscalText(ocrText,'PDF / OCR');profile={...ocrProfile,rfc:base?.rfc||ocrProfile.rfc,name:base?.name||ocrProfile.name,zip:base?.zip||ocrProfile.zip,regime:base?.regime||ocrProfile.regime,email:base?.email||ocrProfile.email}}else profile=base}
+  else if(/\.pdf$/i.test(f.name)){let txt=await readPdfAllText(f,false),base=null;try{base=parseFiscalText(txt,'PDF leído')}catch(firstError){}if(!base||!base.zip||!base.regime){try{clientStatus('El PDF necesita OCR para completar los datos fiscales.');const ocrText=await readPdfAllText(f,true,true),ocrProfile=parseFiscalText(ocrText,'PDF / OCR');profile={...ocrProfile,rfc:base?.rfc||ocrProfile.rfc,name:base?.name||ocrProfile.name,zip:base?.zip||ocrProfile.zip,regime:base?.regime||ocrProfile.regime,email:base?.email||ocrProfile.email}}catch(ocrError){if(!base)throw ocrError;profile={...base,source:'PDF parcialmente leído; OCR no disponible'}}}else profile=base}
   else throw Error('Formato no compatible: usa PDF o XML.');
   saveClientProfile(profile);
  }catch(e){clientStatus(e.message||'No se pudo leer el documento.',true)}
