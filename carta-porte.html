@@ -46,7 +46,7 @@
 </section>
 <section class="card">
  <div class="sectionhead"><b>03</b><h2>Validación antes de capturar</h2></div>
- <div id="audit" class="notice">Completa los datos o carga una solicitud para comenzar la revisión.</div>
+ <div id="audit" class="notice">Completa los datos o carga una solicitud para comenzar la revisión.</div><div id="analysisBox" class="subcard hidden"><h3>Interpretación de NyA</h3><div id="analysisSummary" class="hint"></div><div id="analysisItems"></div><div class="actions noPrint"><button class="btn primary" id="applySuggestions">Aplicar sugerencias seguras</button></div></div>
  <div class="field" style="margin-top:12px"><label>Observaciones / contradicciones por resolver</label><textarea data-field="observations" placeholder="Anota dudas, diferencias entre fuentes o confirmaciones solicitadas al cliente..."></textarea></div>
  <div class="actions noPrint" style="margin-top:16px"><button class="btn primary" id="pdf">Generar ficha PDF / Imprimir</button><button class="btn" id="save">Guardar borrador JSON</button><button class="btn" id="load">Abrir borrador JSON</button><button class="btn" id="reset">Nuevo registro</button><input id="jsonFile" type="file" accept=".json" class="hidden"></div>
  <p class="hint printOnly">Ficha interna de precaptura. No es CFDI, no es Carta Porte timbrada y no sustituye la validación fiscal ni la captura/emisión en CONTPAQi.</p>
@@ -72,7 +72,61 @@ document.addEventListener('input',e=>{if(e.target.matches('[data-field],[data-it
 $('files').onchange=e=>{sources=[...e.target.files].map(f=>({file:f,name:f.name,type:f.type||f.name.split('.').pop(),status:'Pendiente de lectura'}));$('filelist').textContent=sources.map(s=>s.name).join(' · ')||'Aún no has agregado archivos.'};
 $('clearSources').onclick=()=>{sources=[];$('files').value='';$('filelist').textContent='Aún no has agregado archivos.';$('sourceText').value=''};
 async function extract(){const status=$('extractStatus');status.textContent='Leyendo archivos…';let extracted=[];for(const s of sources){try{const ext=s.name.split('.').pop().toLowerCase();if(ext==='txt'||ext==='csv'){const t=await s.file.text();extracted.push('FUENTE: '+s.name+'\n'+t);s.status='Texto leído'}else if(ext==='pdf'){if(!window.pdfjsLib)throw Error('Lector PDF no disponible');const buf=await s.file.arrayBuffer(),pdf=await pdfjsLib.getDocument({data:buf}).promise;let t='';for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p),c=await page.getTextContent();t+='\n'+c.items.map(x=>x.str).join(' ')}if(!t.trim())throw Error('PDF sin texto seleccionable');extracted.push('FUENTE: '+s.name+'\n'+t);s.status='Texto PDF leído'}else if(['png','jpg','jpeg','webp'].includes(ext)){if(!window.Tesseract)throw Error('OCR no disponible');const r=await Tesseract.recognize(s.file,'spa');extracted.push('FUENTE OCR: '+s.name+'\n'+r.data.text);s.status='OCR ejecutado; revisar'}else if(ext==='docx'){throw Error('DOCX: guarda o exporta como PDF o TXT para leerlo en esta versión')}else if(['mp3','wav','m4a','ogg'].includes(ext)){s.status='Audio adjunto; falta transcripción';}else{s.status='Formato adjunto; requiere transcripción'}}catch(err){s.status='No leído: '+err.message}}if(extracted.length)$('sourceText').value=($('sourceText').value+'\n\n'+extracted.join('\n\n')).trim();$('filelist').innerHTML=sources.map(s=>esc(s.name)+' — '+esc(s.status)).join('<br>');status.textContent=extracted.length+' fuente(s) leídas. Revisa y confirma los datos.'}
-$('extract').onclick=extract;
+
+function norm(s){return String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase()}
+function findMatch(text,patterns){for(const re of patterns){const m=text.match(re);if(m&&m[1])return m[1].trim().replace(/[.,;]+$/,'')}return ''}
+function setCandidate(key,value,why,confidence='Alta'){if(!value)return;const el=document.querySelector('[data-field="'+key+'"]');if(!el)return;analysisCandidates.push({key,value,why,confidence,existing:!!el.value.trim()})}
+let analysisCandidates=[];
+function analyzeRequest(){
+ const raw=$('sourceText').value.trim();analysisCandidates=[];
+ if(!raw){alert('Pega mensajes o transcripciones antes de analizar.');return}
+ const t=norm(raw),has=(...w)=>w.some(x=>t.includes(x));
+ // Dates, times and distance
+ let date=findMatch(t,[/\\b(el\\s+)?(\\d{1,2}\\s+de\\s+[a-z]+(?:\\s+de\\s+\\d{4})?)/i,/\\b(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\b/]);
+ if(date)setCandidate('porte.0','3.1','Versión de complemento usada como referencia del módulo; confirmar vigencia/configuración en CONTPAQi.','Media');
+ let distance=findMatch(t,[/\\b(?:distancia|recorrido)\\s*(?:total)?\\s*(?:de)?\\s*(\\d+(?:[.,]\\d+)?)\\s*(?:km|kilometros)\\b/,/\\b(\\d+(?:[.,]\\d+)?)\\s*(?:km|kilometros)\\b/]);
+ if(distance)setCandidate('porte.5',distance.replace(',','.'),'Cantidad expresada en kilómetros.','Media');
+ let weight=findMatch(t,[/\\b(?:peso|pesan|pesando)\\s*(?:total)?\\s*(?:de)?\\s*(\\d+(?:[.,]\\d+)?)\\s*(?:kg|kilos|kilogramos)\\b/]);
+ if(weight)setCandidate('goodsTotals.0',weight.replace(',','.'),'Peso mencionado explícitamente en kg.','Alta');
+ // RFCs, plates and license
+ const rfcs=[...raw.matchAll(/\\b[A-ZÑ&]{3,4}\\d{6}[A-Z0-9]{3}\\b/gi)].map(m=>m[0].toUpperCase());
+ if(rfcs[0])setCandidate('cfdi.3',rfcs[0],'Primer RFC localizado; confirmar si corresponde al emisor.','Media');
+ if(rfcs[1])setCandidate('cfdi.7',rfcs[1],'Segundo RFC localizado; confirmar si corresponde al receptor.','Media');
+ const plate=findMatch(t,[/\\b(?:placas?|matricula)\\s*(?:del camion|del tractocamion|del vehiculo)?\\s*(?:son|es|:)?\\s*([a-z]{2,3}[- ]?\\d{2,4}[- ]?[a-z0-9]{0,3})\\b/i]);
+ if(plate)setCandidate('vehicle.3',plate.toUpperCase(),'Texto cercano a “placa(s)”.','Alta');
+ const license=findMatch(t,[/\\b(?:licencia|licencia federal)\\s*(?:del operador)?\\s*(?:numero|no\.?|:)?\\s*([a-z0-9-]{5,})/i]);
+ if(license)setCandidate('figures.0',license,'Se detectó una posible licencia; requiere confirmar tipo de figura y número.','Baja');
+ // Commodity description and quantity
+ const commodity=findMatch(raw,[/(?:mercancia|producto|material|carga)\\s*(?:es|:|consiste en|que llevamos)?\\s*([^.;\\n]{3,90})/i,/(?:transportamos|vamos a transportar|se transportan)\\s+([^.;\\n]{3,90})/i]);
+ if(commodity)setCandidate('goods.0',commodity,'Descripción deducida por el contexto de mercancía; verificar que no incluya instrucciones adicionales.','Media');
+ const qty=findMatch(t,[/\\b(?:son|cantidad|llevamos|van)\\s+(\\d+(?:[.,]\\d+)?)\\s*(?:piezas|cajas|tarimas|toneladas|bultos)\\b/]);
+ if(qty)setCandidate('goods.0',qty,'Cantidad indicada en el mensaje.','Media');
+ // Location intent: extract the phrase after explicit pickup/delivery cues.
+ const origin=findMatch(raw,[/(?:recoger|recolectar|cargar|sale|salida)\\s+(?:la mercancia\\s+)?(?:en|desde|de)\\s+([^.;\\n]{3,100})/i,/(?:origen)\\s*(?:es|:|en)?\\s*([^.;\\n]{3,100})/i]);
+ const dest=findMatch(raw,[/(?:entregar|destino|descargar|llegar)\\s+(?:la mercancia\\s+)?(?:en|a|hasta)\\s+([^.;\\n]{3,100})/i]);
+ if(origin){addLocIfNeeded();const card=$('locations').children[0];const typ=card.querySelector('[data-item="type"]');const addr=card.querySelector('[data-item="address"]');if(typ&&!typ.value)typ.value='Origen';if(addr&&!addr.value)addr.value=origin;analysisCandidates.push({key:'location.origin',value:origin,why:'Lugar asociado a verbos de recolección/carga/salida. Revisar domicilio completo.',confidence:'Media',existing:!!addr?.value&&addr.value!==origin})}
+ if(dest){addLocIfNeeded();const card=$('locations').children[Math.min(1,$('locations').children.length-1)];const typ=card.querySelector('[data-item="type"]');const addr=card.querySelector('[data-item="address"]');if(typ&&!typ.value)typ.value='Destino';if(addr&&!addr.value)addr.value=dest;analysisCandidates.push({key:'location.destination',value:dest,why:'Lugar asociado a entrega/destino/descarga. Revisar domicilio completo.',confidence:'Media',existing:!!addr?.value&&addr.value!==dest})}
+ const time=findMatch(t,[/\\b(?:a las|hora de carga|hora de recoleccion)\\s+(\\d{1,2}(?::\\d{2})?\\s*(?:am|pm|hrs?)?)/]);
+ const findings=[];
+ if(has('mañana','manana','hoy','pasado mañana','pasado manana'))findings.push('Se menciona una fecha relativa. Debe convertirse a fecha calendario confirmada antes de emitir.');
+ if(has('internacional','aduana','importacion','exportacion','pedimento'))findings.push('La solicitud parece involucrar operación internacional/aduanera. Revisar los datos aduaneros aplicables.');
+ if(has('remolque','caja seca','plataforma','refrigerada'))findings.push('Se menciona equipo o tipo de remolque; confirmar configuración vehicular, placas y datos del equipo.');
+ if(rfcs.length>2)findings.push('Se localizaron varios RFC; asignar cada uno a su participante antes de capturar.');
+ if(has('tonelada','toneladas'))findings.push('La cantidad está expresada en toneladas. No convertir ni asignar como peso en kg sin confirmar el dato y la unidad.');
+ if(time)findings.push('Hora detectada: '+time+'. La ficha actual requiere confirmar fecha, zona horaria y ubicación asociada.');
+ const unique=analysisCandidates.filter((x,i,a)=>a.findIndex(y=>y.key===x.key&&y.value===x.value)===i);
+ analysisCandidates=unique;
+ $('analysisBox').classList.remove('hidden');
+ $('analysisSummary').textContent='Analicé el mensaje y encontré '+unique.length+' posible(s) dato(s). Las inferencias se muestran separadas de los datos explícitos; revisa antes de aplicarlas.';
+ $('analysisItems').innerHTML=(unique.length?unique.map((x,i)=>'<div class="subcard"><div class="top"><b>'+esc(x.value)+'</b><span class="pill '+(x.confidence==='Alta'?'ok':'pending')+'">'+x.confidence+'</span></div><div class="hint">'+esc(x.key)+' · '+esc(x.why)+'</div><label><input type="checkbox" data-candidate="'+i+'" '+(x.confidence==='Alta'&&!x.existing?'checked':'')+'> Aplicar esta sugerencia</label></div>').join(''):'<p class="hint">No se encontraron datos estructurados con suficiente contexto. Agrega más detalles o adjunta otra fuente.');
+ if(findings.length)$('analysisItems').insertAdjacentHTML('beforeend','<div class="notice warning"><b>Observaciones de contexto</b><br>'+findings.map(esc).join('<br>')+'</div>');
+ $('applySuggestions').onclick=()=>{let applied=0;document.querySelectorAll('[data-candidate]:checked').forEach(ch=>{const x=analysisCandidates[Number(ch.dataset.candidate)];if(!x)return;const el=document.querySelector('[data-field="'+x.key+'"]');if(el&&!el.value.trim()){el.value=x.value;applied++}});audit();$('extractStatus').textContent=applied+' sugerencia(s) aplicada(s). Verifica la asignación.'};
+ audit();
+}
+function addLocIfNeeded(){if(!$('locations').children.length)addLoc()}
+$('extract').onclick=async()=>{await extract();analyzeRequest()};
+$('sourceText').addEventListener('change',()=>{});
+
 $('mic').onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('El navegador no admite dictado. Pega la transcripción del audio en el cuadro.');return}const rec=new SR();rec.lang='es-MX';rec.continuous=true;rec.interimResults=false;rec.onresult=e=>{let t='';for(let i=e.resultIndex;i<e.results.length;i++)t+=e.results[i][0].transcript+' ';$('sourceText').value+=($('sourceText').value?'\n':'')+t};rec.onerror=e=>alert('No se pudo dictar: '+e.error);rec.start();$('extractStatus').textContent='Escuchando… para terminar, detén el dictado desde el navegador.'};
 $('pdf').onclick=()=>{audit();window.print()};
 $('save').onclick=()=>{const blob=new Blob([JSON.stringify(allValues(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='NyA_CartaPorte_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)};
